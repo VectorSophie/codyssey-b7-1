@@ -27,6 +27,14 @@ OpenRouter 기반 대화 기능을 먼저 완성했으며, 외부 검색·근거
 → 답변 저장 → 후속 질문 → 과거 대화 재방문
 ```
 
+> **프론트엔드 스택 변경 (검토 후 승인됨):** 초기 계획은 Jinja2 서버 렌더링
+> 템플릿 + vanilla JavaScript였고 Node 빌드 파이프라인은 배제했습니다.
+> Agent 2는 실제로 `frontend/` 아래 React 19 + Vite + TypeScript SPA를
+> 구현했고, 백엔드와는 순수 JSON API로만 통신합니다. 이미 완성되어 테스트를
+> 통과한 UI 코드를 다시 만드는 대신, 검토 후 이 변경을 그대로 승인했습니다.
+> `app/templates/`, `app/static/`은 Agent 1의 백엔드 초기화 단계에서 만든
+> 최소 placeholder로 남아 있으며 실제로 서비스되는 프론트엔드가 아닙니다.
+
 ## 현재 구현 상태
 
 - FastAPI·SQLite·SQLAlchemy 기반 인증과 대화 API 구현
@@ -35,21 +43,23 @@ OpenRouter 기반 대화 기능을 먼저 완성했으며, 외부 검색·근거
 - OpenRouter 무료 모델 강제와 장애 오류 처리 구현
 - 구조화된 요청 생명주기 로그와 `request_id` 구현
 - 외부 네트워크가 차단된 pytest 검증 구현
-- 랜딩·로그인·회원가입·채팅 템플릿은 현재 최소 placeholder 상태
+- React/Vite/TypeScript SPA (`frontend/`)로 랜딩·로그인·회원가입·채팅 화면 구현
+  (35개 vitest 테스트 통과, 타입 오류 0건, 프로덕션 빌드 확인 완료)
+- `app/templates/`, `app/static/`의 Jinja2 placeholder는 실제 서비스되지 않음
 
-최종 화면과 상호작용은 Agent 2 브랜치 통합 후 완성됩니다. 이 README는
-구현되지 않은 Wikipedia grounding이나 완성 UI를 주장하지 않습니다.
+이 README는 구현되지 않은 Wikipedia grounding을 주장하지 않습니다.
 
 ## 기술 구성
 
 - Python, FastAPI, Uvicorn
 - SQLite, SQLAlchemy
-- Jinja2, HTML/CSS, vanilla JavaScript
+- React 19, Vite, TypeScript (`frontend/`) — 위 "프론트엔드 스택 변경" 참고
 - httpx, OpenRouter
-- pytest, pytest-asyncio
+- pytest, pytest-asyncio · vitest (frontend)
 
-React, Vue, Next.js, Node 빌드 파이프라인, Redis, PostgreSQL, Firebase,
-Supabase, Docker는 사용하지 않습니다.
+Vue, Next.js, Redis, PostgreSQL, Firebase, Supabase, Docker는 사용하지
+않습니다. `app/templates/`, `app/static/`은 실제로 서비스되지 않는 초기
+placeholder입니다.
 
 ## 아키텍처와 책임
 
@@ -350,7 +360,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 | 담당 | 영역 | 현재 기여 |
 |---|---|---|
 | Agent 1 | Backend / AI / Architecture | DB 모델, 인증, chat/history API, 문맥, OpenRouter, 기본 로그 |
-| Agent 2 | Frontend / UX | 최종 Jinja2/HTML/CSS/JS 경험 담당; 현재 통합 대기 |
+| Agent 2 | Frontend / UX | React/Vite/TypeScript SPA 구현 완료 (`frontend/`); 백엔드 JSON API 연동 완료 |
 | Agent 3 | QA / Operations / Documentation | 테스트 안전망, 비용·로그 보완, DB 검사, README, 평가·배포 문서 |
 
 소유권 세부사항은 `docs/TEAM.md`, 작업 목록은 `docs/TASKS.md`에 있습니다.
