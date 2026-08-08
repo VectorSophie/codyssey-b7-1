@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+httpx
+jinja2
+python-multipart
+pytest
+pytest-asyncio
