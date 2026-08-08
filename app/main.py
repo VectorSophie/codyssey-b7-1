@@ -1,14 +1,17 @@
+import os
 from contextlib import asynccontextmanager
 import uuid
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import init_db
 from app.errors import INTERNAL_ERROR, AppError
 from app.logging_utils import log_event
-from app.routers import auth, chat, pages
+from app.routers import auth, chat
+
+FRONTEND_DIST = "frontend/dist"
 
 
 @asynccontextmanager
@@ -33,8 +36,6 @@ async def attach_chat_request_id(request: Request, call_next):
 
 app.include_router(auth.router)
 app.include_router(chat.router)
-app.include_router(pages.router)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.exception_handler(AppError)
@@ -57,3 +58,16 @@ def unhandled_error_handler(_request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# Serve the built React SPA (frontend/npm run build) as the same origin as
+# the API, so the browser needs no CORS config in production. Falls back to
+# index.html for any unmatched GET so react-router's client-side routes
+# (e.g. /chat) work on a hard refresh. Registered last so it never shadows
+# /api/*, /health, or /docs.
+if os.path.isdir(f"{FRONTEND_DIST}/assets"):
+    app.mount("/assets", StaticFiles(directory=f"{FRONTEND_DIST}/assets"), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        return FileResponse(f"{FRONTEND_DIST}/index.html")
