@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- 문서의 기본 언어가 한국어임을 브라우저와 보조기술에 알린다. -->
+<html lang="ko">
+    <!-- 페이지 정보와 보안 관련 기본 설정을 담는다. -->
+    <head>
+        <!-- 한글을 정확하게 표시하도록 UTF-8을 사용한다. -->
+        <meta charset="UTF-8" />
+        <!-- 모바일 화면 폭과 확대 동작을 정상적으로 유지한다. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- 외부 페이지로 이동할 때 불필요한 전체 URL 노출을 줄인다. -->
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <!-- 검색 결과와 브라우저 탭에 표시할 서비스 설명이다. -->
+        <meta name="description" content="질문으로 읽는 대화형 백과사전 EVERYTHING" />
+        <!-- 브라우저 주소창이 지원할 때 사용할 차분한 배경색이다. -->
+        <meta name="theme-color" content="#f7f5ef" />
+        <!-- 브라우저 탭에 서비스 이름을 표시한다. -->
+        <title>EVERYTHING — 질문으로 읽는 백과사전</title>
+    </head>
+    <!-- React 앱이 실제 화면을 그리는 문서 본문이다. -->
+    <body>
+        <!-- JavaScript가 꺼진 경우 필요한 안내를 제공한다. -->
+        <noscript>EVERYTHING을 사용하려면 JavaScript를 켜야 합니다.</noscript>
+        <!-- React가 모든 화면을 그릴 기준 요소다. -->
+        <div id="root"></div>
+        <!-- Vite가 TypeScript 시작 파일을 모듈로 불러온다. -->
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>

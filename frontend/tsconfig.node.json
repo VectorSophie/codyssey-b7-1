@@ -1,0 +1,25 @@
+{
+    // Vite 설정 파일을 Node.js 환경에서 검사하는 규칙이다.
+    "compilerOptions": {
+        // 현재 Node.js가 지원하는 최신 문법을 사용한다.
+        "target": "ES2023",
+        // Node.js 표준 기능 타입을 불러온다.
+        "lib": ["ES2023"],
+        // Vite 설정을 ES 모듈로 유지한다.
+        "module": "ESNext",
+        // 번들러 방식으로 패키지 경로를 해석한다.
+        "moduleResolution": "Bundler",
+        // 설정 파일을 다른 파일로 출력하지 않는다.
+        "noEmit": true,
+        // 외부 라이브러리 타입 내부 검사는 생략한다.
+        "skipLibCheck": true,
+        // 파일별 변환에 안전한지 검사한다.
+        "isolatedModules": true,
+        // 잠재적인 타입 오류를 엄격하게 검사한다.
+        "strict": true,
+        // Node.js 전역 타입을 사용할 수 있게 한다.
+        "types": ["node"]
+    },
+    // Vite 설정 파일만 검사한다.
+    "include": ["vite.config.ts"]
+}
