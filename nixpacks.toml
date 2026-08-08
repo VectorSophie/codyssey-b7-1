@@ -1,0 +1,16 @@
+# Mixed Python (backend) + Node (frontend build) app.
+# Railway auto-detects one language; force both toolchains explicitly
+# instead of fighting Nixpacks' single-provider auto-detection.
+
+[phases.setup]
+nixPkgs = ["python311", "nodejs_20"]
+
+[phases.install]
+cmds = [
+  "python -m pip install --upgrade pip",
+  "pip install -r requirements.txt",
+  "cd frontend && npm ci"
+]
+
+[phases.build]
+cmds = ["cd frontend && npm run build"]
