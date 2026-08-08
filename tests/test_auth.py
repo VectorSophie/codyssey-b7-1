@@ -55,6 +55,50 @@ def test_logout_invalidates_browser_access(client):
     assert client.get("/api/auth/me").status_code == 401
 
 
+def test_username_with_disallowed_characters_is_rejected(client):
+    response = client.post(
+        "/api/auth/register",
+        json={"username": "al ice!", "email": "alice@example.com", "password": "password123"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_registration_race_translates_integrity_error_to_taken(client, monkeypatch):
+    import app.routers.auth as auth_module
+    from app.database import get_db
+    from app.main import app
+    from app.models.user import User
+
+    db = next(app.dependency_overrides[get_db]())
+    db.add(User(username="racer", email="racer@example.com", password_hash="x"))
+    db.commit()
+    db.close()
+
+    # Simulate two requests racing past the pre-insert check: make it report
+    # "no conflict" once (like the real UNIQUE constraint check would if it
+    # ran a moment before the concurrent insert landed), so this request
+    # falls through to db.commit() and hits the real constraint instead.
+    call_count = {"n": 0}
+    real_find = auth_module._find_conflicting_user
+
+    def racy_find(db, username, email):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            return None
+        return real_find(db, username, email)
+
+    monkeypatch.setattr(auth_module, "_find_conflicting_user", racy_find)
+
+    response = client.post(
+        "/api/auth/register",
+        json={"username": "racer", "email": "different@example.com", "password": "password123"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error_code"] == "USERNAME_TAKEN"
+
+
 def test_unauthenticated_chat_and_history_are_blocked(client):
     chat_response = client.post(
         "/api/chat", json={"session_id": None, "message": "질문"}

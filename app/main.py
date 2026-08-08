@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import init_db
-from app.errors import INTERNAL_ERROR, AppError
+from app.errors import INTERNAL_ERROR, NOT_FOUND, AppError
 from app.logging_utils import log_event
 from app.routers import auth, chat
 
@@ -70,4 +70,9 @@ if os.path.isdir(f"{FRONTEND_DIST}/assets"):
 
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
+        # Never swallow an unmatched API route into a 200 HTML response --
+        # a typo'd or removed endpoint should 404 as JSON, not "succeed"
+        # with the wrong content type.
+        if full_path == "api" or full_path.startswith("api/"):
+            raise AppError(NOT_FOUND, "not found", status_code=404)
         return FileResponse(f"{FRONTEND_DIST}/index.html")
