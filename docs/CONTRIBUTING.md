@@ -74,17 +74,15 @@ why in the PR description. If a shared file's interface must change
 (notably `docs/API_CONTRACT.md`), document the reason clearly in the PR
 and update the contract doc in the same PR.
 
-## Branch Protection (recommended, not yet enforced)
+## Branch Protection (enforced)
 
-The repo is private on a free GitHub plan, so branch protection rules
-cannot be configured via the API/UI (`Upgrade to GitHub Pro or make this
-repository public to enable this feature`). Until upgraded or made public,
-treat these as team convention rather than enforced rules:
+The repo is public, so the following GitHub branch protection rules are
+enabled on both `main` and `develop`:
 
-- `main`: no direct pushes — only merge via PR from `develop`
-- `develop`: prefer PR-based merges from feature branches over direct pushes
+- pull request required before merging (1 approving review)
+- force-pushes disabled
+- branch deletion disabled
 
-If the repo is later made public or upgraded to Pro, apply: require a PR
-before merging on `main` and `develop`, disallow force-pushes and branch
-deletion on both. No status checks/required reviewers needed — this is a
-three-person educational project, not an enterprise setup.
+No required status checks — this is a three-person educational project,
+not an enterprise setup. The 1-review minimum is GitHub's floor for
+"PR required"; it cannot be set to zero reviews while still requiring a PR.
