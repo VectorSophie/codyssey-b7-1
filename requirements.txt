@@ -4,5 +4,7 @@ sqlalchemy
 httpx
 jinja2
 python-multipart
+python-dotenv
+email-validator
 pytest
 pytest-asyncio
