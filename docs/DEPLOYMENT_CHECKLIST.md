@@ -56,5 +56,11 @@ After startup:
 - OpenRouter availability and free-tier rate limits are external dependencies.
   Controlled errors keep the application responsive, but failed AI requests do
   not create conversation rows.
-- Dependency versions are not pinned yet; pin and review them before a
-  long-lived production release.
+- Dependencies are pinned in `requirements.txt` (production) and
+  `requirements-dev.txt` (adds pytest); review/bump them periodically.
+- The chat request handler holds a synchronous SQLAlchemy session open
+  across the `await`ed OpenRouter call (up to `AI_TIMEOUT_SECONDS`, default
+  20s), and opens a new `httpx.AsyncClient` per request. Fine at current
+  scale (single SQLite instance, low concurrency); the first thing to
+  revisit if traffic grows is connection reuse and whether the DB work
+  needs to leave the request's async context at all.

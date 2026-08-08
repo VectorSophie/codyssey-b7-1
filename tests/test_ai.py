@@ -22,12 +22,17 @@ def install_transport(monkeypatch, handler):
 
 
 @pytest.mark.asyncio
-async def test_openrouter_200_uses_free_model_and_returns_content(monkeypatch):
+async def test_openrouter_200_uses_free_model_fallback_list_and_returns_content(monkeypatch):
     def handler(request):
         body = json.loads(request.content)
         assert request.url == ai_module.OPENROUTER_URL
         assert request.headers["Authorization"] == "Bearer test-key"
-        assert body["model"] == "openrouter/free"
+        # openrouter/free is a meta-router whose pool includes a non-chat
+        # moderation model (nvidia/nemotron-3.5-content-safety:free, verified
+        # against the real API returning "User Safety: safe" instead of an
+        # answer) -- send an explicit curated fallback list instead.
+        assert body["models"] == ai_module.FREE_MODEL_FALLBACKS
+        assert "model" not in body
         assert body["messages"][-1]["content"] == "질문"
         return httpx.Response(
             200, json={"choices": [{"message": {"content": "응답"}}]}
@@ -38,6 +43,22 @@ async def test_openrouter_200_uses_free_model_and_returns_content(monkeypatch):
     answer = await ai_module.call_openrouter([{"role": "user", "content": "질문"}])
 
     assert answer == "응답"
+
+
+def test_free_model_fallback_list_excludes_known_non_chat_models():
+    # Verified empirically against the real OpenRouter API (not asserted
+    # here, since tests must never make real network calls): these three
+    # produced no usable answer -- a moderation classifier, an empty
+    # response, and a model that code-switched into Hindi/Russian.
+    excluded = {
+        "nvidia/nemotron-3.5-content-safety:free",
+        "inclusionai/ling-3.0-tiny:free",
+        "nvidia/nemotron-3-nano-30b-a3b:free",
+        "nvidia/nemotron-nano-12b-v2-vl:free",
+        "nvidia/nemotron-nano-9b-v2:free",
+    }
+    assert not excluded & set(ai_module.FREE_MODEL_FALLBACKS)
+    assert all(m.endswith(":free") for m in ai_module.FREE_MODEL_FALLBACKS)
 
 
 @pytest.mark.asyncio

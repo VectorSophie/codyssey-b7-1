@@ -4,7 +4,26 @@ import httpx
 from app.config import settings
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Required OPENROUTER_MODEL value -- a config sanity check only. The actual
+# request never sends this string; see FREE_MODEL_FALLBACKS below.
 FREE_MODEL = "openrouter/free"
+
+# openrouter/free is an auto-router, not a single model -- its pool includes
+# non-chat models. Verified directly against the OpenRouter API:
+# nvidia/nemotron-3.5-content-safety:free is a moderation classifier and
+# returns "User Safety: safe" instead of answering the question. Send an
+# explicit ordered fallback list of models empirically confirmed to produce
+# correct, coherent Korean answers instead of relying on the auto-router.
+# Every entry is :free -- cost stays zero, no paid fallback introduced.
+# Capped at 3: OpenRouter rejects a "models" array with more than 3 items
+# (400 "'models' array must have 3 items or fewer", confirmed against the
+# real API).
+FREE_MODEL_FALLBACKS = [
+    "openai/gpt-oss-20b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "poolside/laguna-s-2.1:free",
+]
 
 SYSTEM_PROMPT = (
     "You are EVERYTHING, a conversational encyclopedia.\n"
@@ -41,7 +60,7 @@ async def call_openrouter(messages: list[dict]) -> str:
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
     }
-    body = {"model": FREE_MODEL, "messages": messages}
+    body = {"models": FREE_MODEL_FALLBACKS, "messages": messages}
 
     try:
         async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
