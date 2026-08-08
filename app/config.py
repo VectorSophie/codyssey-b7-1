@@ -29,3 +29,11 @@ class Settings:
 
 
 settings = Settings()
+
+_INSECURE_DEFAULT_SECRET = "dev-insecure-secret-change-me"
+
+if settings.app_env == "production" and settings.secret_key in ("", _INSECURE_DEFAULT_SECRET):
+    raise RuntimeError(
+        "SECRET_KEY must be set to a real random value when APP_ENV=production "
+        "(session cookies would otherwise be forgeable by anyone)."
+    )
