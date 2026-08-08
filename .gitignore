@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 *.db
 *.sqlite
 *.sqlite3
@@ -11,3 +13,8 @@ venv/
 htmlcov/
 logs/
 .DS_Store
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo

@@ -3,8 +3,8 @@
 ## Flow
 
 ```
-Browser
-  -> FastAPI
+Browser (React SPA)
+  -> FastAPI JSON API
        -> Authentication (server-side session)
        -> Chat Router
             -> Context Service (recent-message window)
@@ -16,9 +16,18 @@ Browser
 
 ## Frontend
 
-Jinja2 server-rendered templates + vanilla JavaScript for interactivity
-(chat composer, follow-ups, history navigation). No React/Vue/Next.js or
-Node build pipeline.
+**Deviation from the original plan, reviewed and accepted:** the project
+was originally scoped for Jinja2 server-rendered templates + vanilla
+JavaScript, explicitly ruling out React/Vue/Next.js and a Node build
+pipeline, to keep the stack simple and evaluable. Agent 2 built the
+frontend as a React 19 + Vite + TypeScript single-page app under
+`frontend/`, calling the backend purely as a JSON API (see
+`frontend/src/api/client.ts`), rather than using `app/templates/` +
+`app/static/`. This was accepted after review rather than rebuilt, since
+it was already working, tested UI code and a full rewrite would have
+discarded that work for a stylistic-only gain. `app/templates/` and
+`app/static/` remain in the repo as the minimal placeholder pages from
+Agent 1's backend bootstrap; they are not the served frontend.
 
 ## Backend
 

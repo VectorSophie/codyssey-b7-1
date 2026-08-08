@@ -1,0 +1,1333 @@
+/* 서비스 전체에서 반복 사용할 색상과 크기를 한 곳에 정의한다. */
+:root {
+    --color-paper: #f7f5ef; /* 따뜻한 미색을 전체 배경으로 사용한다. */
+    --color-surface: #fffefb; /* 읽기 영역은 조금 더 밝게 구분한다. */
+    --color-ink: #1d1f1d; /* 본문은 검정에 가까운 잉크색으로 표시한다. */
+    --color-muted: #686b67; /* 보조 정보는 대비를 낮춘 회색으로 표시한다. */
+    --color-rule: #d8d6cf; /* 구분선은 눈에 거슬리지 않는 회색을 사용한다. */
+    --color-rule-strong: #858982; /* 입력 외곽선은 밝은 표면과 3:1 이상 대비되게 한다. */
+    --color-accent: #28594b; /* 하나의 절제된 녹색만 강조색으로 사용한다. */
+    --color-accent-dark: #193d33; /* hover와 진한 버튼에 어두운 강조색을 사용한다. */
+    --color-accent-soft: #e9f0ec; /* 선택 상태는 옅은 강조색 배경으로 표시한다. */
+    --color-danger: #9c332c; /* 삭제와 오류를 구분하는 절제된 붉은색이다. */
+    --color-danger-soft: #faece9; /* 위험 상태의 옅은 배경색이다. */
+    --font-sans: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif; /* 조작부는 읽기 쉬운 시스템 sans-serif를 사용한다. */
+    --font-serif: "Iowan Old Style", "AppleMyungjo", "Noto Serif KR", Georgia, serif; /* 제목은 백과사전 느낌의 시스템 serif를 사용한다. */
+    --reading-width: 740px; /* 데스크톱 답변 폭을 요구 범위 안으로 제한한다. */
+    --topbar-height: 64px; /* 상단 바의 일관된 높이다. */
+    color: var(--color-ink); /* 문서 기본 글자색을 잉크색으로 정한다. */
+    background: var(--color-paper); /* 문서 바깥 기본 배경을 미색으로 정한다. */
+    font-family: var(--font-sans); /* 기본 문장은 한국어 sans-serif로 표시한다. */
+    font-synthesis: none; /* 브라우저가 가짜 굵기나 기울임을 만들지 않게 한다. */
+    text-rendering: optimizeLegibility; /* 가능한 브라우저에서 글자 읽기 품질을 높인다. */
+    color-scheme: light; /* 의도한 밝은 표면 색을 브라우저 기본 UI에도 알린다. */
+}
+
+/* 모든 요소의 크기 계산에 padding과 border를 포함한다. */
+*,
+*::before,
+*::after {
+    box-sizing: border-box; /* 예상하지 못한 너비 초과를 막는다. */
+}
+
+/* 문서와 React 시작 요소가 화면 전체 높이를 사용할 수 있게 한다. */
+html,
+body,
+#root {
+    min-height: 100%; /* 짧은 화면도 최소한 브라우저 높이를 채운다. */
+}
+
+/* 브라우저 기본 여백을 제거하고 전체 가로 넘침을 막는다. */
+html {
+    overflow-x: hidden; /* 긴 콘텐츠가 페이지 전체 가로 스크롤을 만들지 않게 한다. */
+    scroll-behavior: smooth; /* 키보드 바로가기 이동을 부드럽게 한다. */
+}
+
+/* 모든 화면이 공유할 본문 기본값을 설정한다. */
+body {
+    min-width: 320px; /* 극단적으로 좁은 폭에서도 배치 기준을 유지한다. */
+    margin: 0; /* 브라우저 기본 바깥 여백을 제거한다. */
+    background: var(--color-paper); /* 모든 경로에서 미색 배경을 유지한다. */
+    color: var(--color-ink); /* 모든 경로에서 기본 글자 대비를 확보한다. */
+    line-height: 1.6; /* 한국어 본문이 붙어 보이지 않게 행간을 확보한다. */
+    overflow-x: hidden; /* 페이지 전체의 수평 넘침을 한 번 더 막는다. */
+}
+
+/* 폼 조작부가 본문과 같은 글꼴을 사용하게 한다. */
+button,
+input,
+textarea {
+    color: inherit; /* 조작부도 현재 영역의 글자색을 따른다. */
+    font: inherit; /* 브라우저 기본 폼 글꼴 대신 서비스 글꼴을 사용한다. */
+}
+
+/* 모든 버튼의 기본 커서와 터치 동작을 일관되게 한다. */
+button {
+    touch-action: manipulation; /* 모바일 더블 탭 확대 대신 빠른 버튼 동작을 사용한다. */
+}
+
+/* 비활성화된 버튼과 입력이 실제로 조작 불가임을 보이게 한다. */
+button:disabled,
+input:disabled,
+textarea:disabled {
+    cursor: not-allowed; /* 마우스 사용자에게 비활성 상태를 알린다. */
+    opacity: 0.58; /* 색상 외에 투명도 차이로 비활성 상태를 구분한다. */
+}
+
+/* 링크는 본문 색을 유지하고 필요한 곳에서만 밑줄을 사용한다. */
+a {
+    color: inherit; /* 문맥에 맞는 현재 글자색을 사용한다. */
+    text-decoration-thickness: 1px; /* 밑줄이 글자를 지나치게 가리지 않게 한다. */
+    text-underline-offset: 0.2em; /* 밑줄과 글자 사이 간격을 확보한다. */
+}
+
+/* 이미지가 추가되더라도 부모 너비를 넘지 않게 한다. */
+img,
+svg {
+    max-width: 100%; /* 미디어로 인한 가로 넘침을 막는다. */
+}
+
+/* 길고 공백 없는 텍스트도 화면 폭 안에서 줄바꿈한다. */
+p,
+h1,
+h2,
+h3,
+li,
+button,
+a {
+    overflow-wrap: anywhere; /* 긴 URL이나 연속 문자가 페이지를 밀지 않게 한다. */
+}
+
+/* 키보드 사용자가 현재 위치를 분명히 볼 수 있게 한다. */
+:focus-visible {
+    outline: 3px solid #4f8f7c; /* 배경과 충분히 구분되는 focus 테두리를 표시한다. */
+    outline-offset: 3px; /* 요소 외곽과 focus 테두리 사이를 띄운다. */
+}
+
+/* 반복 내비게이션을 건너뛰는 링크를 평소에는 화면 밖에 둔다. */
+.skip-link {
+    position: fixed; /* 스크롤과 관계없이 focus될 때 상단에 보이게 한다. */
+    top: 10px; /* 브라우저 상단과 작은 간격을 둔다. */
+    left: 10px; /* 브라우저 왼쪽과 작은 간격을 둔다. */
+    z-index: 200; /* drawer와 dialog보다 위에서 보이게 한다. */
+    padding: 10px 14px; /* 클릭과 focus 영역을 충분히 확보한다. */
+    border: 1px solid var(--color-ink); /* 링크 경계를 색상 외에도 표시한다. */
+    background: var(--color-surface); /* 뒤 콘텐츠와 분리되는 밝은 배경을 사용한다. */
+    transform: translateY(-160%); /* focus 전에는 화면 밖으로 숨긴다. */
+    transition: transform 140ms ease; /* 나타날 때 위치 변화를 짧게 부드럽게 한다. */
+}
+
+/* 키보드 focus가 오면 바로가기 링크를 화면 안에 보여준다. */
+.skip-link:focus {
+    transform: translateY(0); /* 화면 상단의 실제 조작 위치로 이동한다. */
+}
+
+/* 시각적으로 숨겨도 보조기술은 읽을 수 있는 label을 만든다. */
+.visually-hidden {
+    position: absolute; /* 일반 문서 흐름에서 공간을 차지하지 않게 한다. */
+    width: 1px; /* 화면에 보이지 않는 최소 너비를 사용한다. */
+    height: 1px; /* 화면에 보이지 않는 최소 높이를 사용한다. */
+    padding: 0; /* 숨김 요소의 불필요한 내부 여백을 없앤다. */
+    margin: -1px; /* 남은 1px 공간도 문서 흐름에서 제거한다. */
+    overflow: hidden; /* 요소 안의 텍스트가 보이지 않게 한다. */
+    clip: rect(0, 0, 0, 0); /* 구형 브라우저에서도 시각 영역을 잘라낸다. */
+    white-space: nowrap; /* 숨긴 텍스트가 여러 줄 공간을 만들지 않게 한다. */
+    border: 0; /* 숨김 요소의 테두리를 제거한다. */
+}
+
+/* 입력 안내 문구도 밝은 배경에서 읽을 수 있는 대비를 고정한다. */
+input::placeholder,
+textarea::placeholder {
+    color: var(--color-muted); /* 일반 보조 문장과 같은 충분한 대비 색을 사용한다. */
+    opacity: 1; /* 브라우저가 placeholder를 임의로 더 흐리게 만들지 않게 한다. */
+}
+
+/* 서비스 이름을 자체 텍스트 로고로 표현한다. */
+.wordmark {
+    display: inline-flex; /* 글자 영역만 정렬과 클릭 영역을 갖게 한다. */
+    align-items: center; /* 상단 바 안에서 세로 중앙에 맞춘다. */
+    color: var(--color-ink); /* 브랜드 이름도 과한 색 없이 잉크색을 사용한다. */
+    font-family: var(--font-serif); /* 백과사전 성격을 serif로 표현한다. */
+    font-size: 1.05rem; /* 내비게이션 안에서 눈에 띄되 과장하지 않는다. */
+    font-weight: 700; /* 작은 크기에서도 서비스 이름을 분명히 한다. */
+    letter-spacing: 0.14em; /* 대문자 사이 간격으로 고유 정체성을 만든다. */
+    text-decoration: none; /* 텍스트 로고의 기본 밑줄을 제거한다. */
+    white-space: nowrap; /* 좁은 폭에서도 서비스 이름을 한 줄로 유지한다. */
+}
+
+/* 작은 섹션 종류를 편집물의 상단 표제처럼 표시한다. */
+.eyebrow {
+    margin: 0 0 12px; /* 다음 제목과 짧은 간격을 둔다. */
+    color: var(--color-accent); /* 단일 강조색으로 문서 종류를 표시한다. */
+    font-size: 0.76rem; /* 본문보다 작게 보조 정보로 표시한다. */
+    font-weight: 700; /* 작은 글자도 명확히 읽히게 한다. */
+    letter-spacing: 0.16em; /* 표제처럼 보이도록 자간을 넓힌다. */
+    text-transform: uppercase; /* 영문이 포함될 때 표제 형식을 맞춘다. */
+}
+
+/* 공통 버튼은 과도하게 둥글지 않은 사각 형태로 만든다. */
+.button {
+    display: inline-flex; /* 텍스트를 버튼 안에서 정렬한다. */
+    min-height: 42px; /* 터치와 키보드 사용에 충분한 높이를 확보한다. */
+    align-items: center; /* 버튼 텍스트를 세로 중앙에 맞춘다. */
+    justify-content: center; /* 버튼 텍스트를 가로 중앙에 맞춘다. */
+    gap: 8px; /* 아이콘이 추가될 경우 읽기 간격을 확보한다. */
+    padding: 9px 16px; /* 텍스트 주위에 안정적인 클릭 영역을 만든다. */
+    border: 1px solid var(--color-rule-strong); /* 버튼 경계를 색상 외에도 구분한다. */
+    border-radius: 5px; /* 절제된 작은 모서리만 적용한다. */
+    background: var(--color-surface); /* 기본 버튼은 밝은 표면을 사용한다. */
+    color: var(--color-ink); /* 기본 버튼 글자를 잉크색으로 표시한다. */
+    font-size: 0.92rem; /* 조작부에 맞는 간결한 크기를 사용한다. */
+    font-weight: 650; /* 버튼 동작을 본문보다 조금 더 강조한다. */
+    line-height: 1; /* 버튼 높이 계산을 안정적으로 유지한다. */
+    text-decoration: none; /* 링크형 버튼의 밑줄을 제거한다. */
+    cursor: pointer; /* 클릭할 수 있는 요소임을 나타낸다. */
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease; /* 상태 변화를 짧게 보여준다. */
+}
+
+/* 공통 버튼 hover에서 경계를 조금 더 분명히 한다. */
+.button:hover:not(:disabled) {
+    border-color: var(--color-ink); /* 마우스 위치를 테두리 대비로 알린다. */
+}
+
+/* 가장 중요한 제출 버튼은 단일 강조색으로 표시한다. */
+.button--primary {
+    border-color: var(--color-accent); /* 배경과 같은 강조색 경계를 사용한다. */
+    background: var(--color-accent); /* 주요 행동만 진한 녹색으로 표시한다. */
+    color: #ffffff; /* 어두운 배경에서 충분한 글자 대비를 확보한다. */
+}
+
+/* 주요 버튼 hover는 같은 계열의 어두운 색만 사용한다. */
+.button--primary:hover:not(:disabled) {
+    border-color: var(--color-accent-dark); /* hover에서 경계를 조금 더 어둡게 한다. */
+    background: var(--color-accent-dark); /* hover를 색조 변화로 표시한다. */
+}
+
+/* 상단 내비게이션의 작은 버튼 크기를 정의한다. */
+.button--small {
+    min-height: 36px; /* 상단 바 높이에 맞게 조금 작게 만든다. */
+    padding: 7px 13px; /* 작은 버튼에도 충분한 클릭 영역을 유지한다. */
+    font-size: 0.85rem; /* 상단 보조 동작에 맞는 크기를 사용한다. */
+}
+
+/* 인증 제출 버튼이 폼 너비를 채우게 한다. */
+.button--full {
+    width: 100%; /* 모든 화면 폭에서 폼과 같은 너비를 사용한다. */
+}
+
+/* 삭제 버튼은 색상과 텍스트로 위험 동작을 구분한다. */
+.button--danger {
+    border-color: var(--color-danger); /* 위험 색 경계를 함께 표시한다. */
+    background: var(--color-danger); /* 삭제 확정 버튼만 위험 색을 사용한다. */
+    color: #ffffff; /* 어두운 위험 배경에서 글자 대비를 확보한다. */
+}
+
+/* 삭제 hover는 같은 위험 색 계열에서만 바꾼다. */
+.button--danger:hover:not(:disabled) {
+    background: #7e2722; /* hover 상태를 더 어두운 위험 색으로 표시한다. */
+}
+
+/* 작은 내비게이션 동작은 배경 없는 텍스트 버튼으로 만든다. */
+.text-button {
+    min-height: 38px; /* 터치 가능한 최소 높이를 확보한다. */
+    padding: 6px 8px; /* 텍스트 주변에 클릭 공간을 만든다. */
+    border: 0; /* 카드처럼 보이는 불필요한 테두리를 제거한다. */
+    background: transparent; /* 주변 편집형 화면과 자연스럽게 섞이게 한다. */
+    color: var(--color-ink); /* 일반 동작은 본문 잉크색으로 표시한다. */
+    font-size: 0.87rem; /* 상단과 기록 보조 동작에 맞는 크기다. */
+    font-weight: 650; /* 링크가 아닌 실제 동작임을 조금 강조한다. */
+    text-decoration: underline; /* 색상 없이도 클릭 가능한 텍스트임을 알린다. */
+    text-decoration-color: transparent; /* 기본 상태에서는 밑줄을 조용히 숨긴다. */
+    text-underline-offset: 0.24em; /* hover 밑줄과 글자 사이 간격을 둔다. */
+    cursor: pointer; /* 클릭할 수 있는 동작임을 나타낸다. */
+}
+
+/* 텍스트 버튼 hover에서 밑줄을 표시한다. */
+.text-button:hover:not(:disabled) {
+    text-decoration-color: currentColor; /* 색상 외에 밑줄로 hover를 알린다. */
+}
+
+/* 모든 폼 오류는 색상과 문장으로 함께 전달한다. */
+.form-error {
+    min-height: 1.5em; /* 오류 유무로 폼이 크게 움직이지 않게 한다. */
+    margin: 8px 0 0; /* 입력과 오류 사이의 간격을 둔다. */
+    color: var(--color-danger); /* 오류를 절제된 위험 색으로 표시한다. */
+    font-size: 0.84rem; /* 입력 보조 정보 크기로 표시한다. */
+    font-weight: 600; /* 작은 오류 문장이 분명히 읽히게 한다. */
+}
+
+/* 보호 경로의 인증 확인 상태를 화면 중앙에 표시한다. */
+.route-status {
+    display: grid; /* 두 상태 문구를 세로로 배치한다. */
+    min-height: 100dvh; /* 동적 모바일 높이까지 화면을 채운다. */
+    place-content: center; /* 상태 문구를 화면 중앙에 놓는다. */
+    gap: 4px; /* 브랜드와 상태 사이를 짧게 띄운다. */
+    text-align: center; /* 중앙 배치와 글자 정렬을 맞춘다. */
+}
+
+/* 인증 확인 중 서비스 이름을 편집형 글꼴로 표시한다. */
+.route-status__brand {
+    margin: 0; /* 기본 문단 여백을 제거한다. */
+    font-family: var(--font-serif); /* 서비스 이름에 serif를 사용한다. */
+    font-weight: 700; /* 작은 글자에서도 정체성을 분명히 한다. */
+    letter-spacing: 0.12em; /* 대문자 사이 간격을 넓힌다. */
+}
+
+/* 인증 확인 상태의 설명 문장 여백과 색을 정한다. */
+.route-status p:last-child {
+    margin: 0; /* 불필요한 기본 여백을 제거한다. */
+    color: var(--color-muted); /* 보조 상태는 회색으로 표시한다. */
+}
+
+/* 랜딩은 상단, 중심 질문, 하단으로 화면 높이를 나눈다. */
+.landing-page {
+    display: grid; /* 세 영역을 안정적인 행으로 배치한다. */
+    min-height: 100dvh; /* 모바일 주소창 변화까지 고려한 높이를 사용한다. */
+    grid-template-rows: auto 1fr auto; /* 중심 질문 영역이 남은 공간을 채운다. */
+    background: var(--color-paper); /* 백과사전 같은 미색 표면을 유지한다. */
+}
+
+/* 랜딩 상단에 서비스 이름과 인증 메뉴를 배치한다. */
+.landing-header {
+    display: flex; /* 좌우 요소를 한 줄에 배치한다. */
+    width: min(1180px, calc(100% - 48px)); /* 큰 화면에서도 내용 폭을 제한한다. */
+    min-height: 70px; /* 조작부가 답답하지 않은 높이를 확보한다. */
+    margin: 0 auto; /* 상단 내용을 화면 중앙에 맞춘다. */
+    align-items: center; /* 서비스 이름과 메뉴를 세로 중앙에 맞춘다. */
+    justify-content: space-between; /* 이름은 왼쪽, 메뉴는 오른쪽에 둔다. */
+    gap: 20px; /* 좁은 화면에서 두 영역이 붙지 않게 한다. */
+}
+
+/* 랜딩 사용자 메뉴를 한 줄에 배치한다. */
+.landing-nav,
+.auth-links {
+    display: flex; /* 링크와 버튼을 한 줄로 정렬한다. */
+    align-items: center; /* 서로 다른 높이의 조작부를 중앙에 맞춘다. */
+    gap: 16px; /* 조작부 사이에 충분한 간격을 둔다. */
+}
+
+/* 일반 상단 링크를 과하지 않은 텍스트로 만든다. */
+.nav-link {
+    color: var(--color-ink); /* 링크를 본문과 같은 잉크색으로 표시한다. */
+    font-size: 0.88rem; /* 상단 보조 동작 크기로 표시한다. */
+    font-weight: 650; /* 클릭 가능한 링크임을 조금 강조한다. */
+    text-decoration-color: transparent; /* 기본 상태에서 밑줄을 조용히 숨긴다. */
+}
+
+/* 상단 링크 hover에서 밑줄을 표시한다. */
+.nav-link:hover {
+    text-decoration-color: currentColor; /* 색상 외에 밑줄로 hover를 알린다. */
+}
+
+/* 로그인 확인 문구를 보조 정보로 표시한다. */
+.nav-status {
+    color: var(--color-muted); /* 주 동작보다 낮은 대비로 표시한다. */
+    font-size: 0.84rem; /* 상단 상태에 맞는 작은 크기를 사용한다. */
+}
+
+/* 랜딩 핵심 콘텐츠를 화면 중앙에 배치한다. */
+.landing-main {
+    display: grid; /* hero를 간단하게 중앙 정렬한다. */
+    place-items: center; /* 남은 화면의 가로와 세로 중앙에 둔다. */
+    padding: 56px 24px 72px; /* 작은 화면에서도 가장자리 여백을 확보한다. */
+}
+
+/* 랜딩의 질문 중심 hero 폭과 정렬을 제한한다. */
+.landing-hero {
+    width: min(880px, 100%); /* 검색 도구가 너무 넓어지지 않게 한다. */
+    text-align: center; /* 핵심 문구와 질문 도구를 중앙에 맞춘다. */
+}
+
+/* 랜딩 핵심 제목을 편집형 serif로 크게 표시한다. */
+.landing-hero h1 {
+    margin: 0; /* 기본 제목 여백을 제거한다. */
+    font-family: var(--font-serif); /* 백과사전 성격을 serif로 표현한다. */
+    font-size: clamp(2.8rem, 7vw, 5.8rem); /* 375px부터 큰 화면까지 자연스럽게 조절한다. */
+    font-weight: 600; /* 과하게 무겁지 않은 편집형 굵기를 사용한다. */
+    letter-spacing: -0.055em; /* 큰 제목의 한글 글자 사이를 안정적으로 맞춘다. */
+    line-height: 1.08; /* 두 줄이 되어도 조밀한 제목 행간을 유지한다. */
+    text-wrap: balance; /* 지원 브라우저에서 제목 줄 길이를 균형 있게 나눈다. */
+}
+
+/* 랜딩 보조 문구는 제목 아래에 조용히 배치한다. */
+.landing-subtitle {
+    margin: 18px 0 0; /* 제목과 적당한 간격을 둔다. */
+    color: var(--color-muted); /* 핵심 제목보다 낮은 대비로 표시한다. */
+    font-family: var(--font-serif); /* 편집형 성격을 유지한다. */
+    font-size: clamp(1.05rem, 2vw, 1.3rem); /* 화면 폭에 맞게 조금만 조절한다. */
+}
+
+/* 랜딩 검색 도구를 핵심 제목 가까이에 배치한다. */
+.landing-search {
+    position: relative; /* 글자 수를 오른쪽에 배치할 기준을 만든다. */
+    width: min(780px, 100%); /* 큰 화면에서도 읽고 조작하기 좋은 폭을 사용한다. */
+    margin: 48px auto 0; /* 제목과 질문 도구 사이에 넉넉한 여백을 둔다. */
+    text-align: left; /* 오류와 글자 수는 자연스러운 왼쪽 기준을 사용한다. */
+}
+
+/* 랜딩 입력과 버튼을 하나의 선명한 질문 도구로 묶는다. */
+.landing-search__control {
+    display: grid; /* 입력이 남은 폭을 채우도록 grid를 사용한다. */
+    grid-template-columns: minmax(0, 1fr) auto; /* 입력과 고정 폭 버튼을 나란히 둔다. */
+    padding: 7px; /* 외곽선과 내부 조작부 사이에 작은 여백을 둔다. */
+    border: 1px solid var(--color-rule-strong); /* 검색 도구 경계를 명확히 한다. */
+    border-radius: 7px; /* 과하지 않은 작은 모서리만 적용한다. */
+    background: var(--color-surface); /* 질문 도구를 미색 배경과 분리한다. */
+    box-shadow: 0 10px 32px rgba(36, 38, 35, 0.07); /* 한 번의 약한 그림자로 중요도를 표시한다. */
+}
+
+/* 랜딩 질문 입력의 불필요한 기본 테두리를 제거한다. */
+.landing-search input {
+    min-width: 0; /* 긴 질문이 grid 너비를 밀지 않게 한다. */
+    min-height: 54px; /* 핵심 입력에 충분한 터치 높이를 확보한다. */
+    padding: 10px 15px; /* 글자와 검색 도구 경계 사이를 띄운다. */
+    border: 0; /* 바깥 검색 도구 하나만 경계로 사용한다. */
+    border-radius: 4px; /* 내부 focus 배경과 자연스럽게 맞춘다. */
+    background: transparent; /* 바깥 표면 색을 그대로 사용한다. */
+    font-size: clamp(1rem, 2vw, 1.15rem); /* 질문이 핵심 행동으로 읽히는 크기다. */
+    outline: 0; /* 공통 focus 대신 부모 focus-within을 사용한다. */
+}
+
+/* 랜딩 입력 focus를 전체 질문 도구 경계로 표시한다. */
+.landing-search__control:focus-within {
+    border-color: var(--color-accent); /* focus를 단일 강조색 경계로 표시한다. */
+    box-shadow: 0 0 0 3px rgba(40, 89, 75, 0.16); /* 색상과 외곽 영역으로 focus를 분명히 한다. */
+}
+
+/* 부모가 focus를 표시하므로 입력 자체의 공통 outline은 제거한다. */
+.landing-search input:focus-visible {
+    outline: none; /* 이중 focus 테두리를 막는다. */
+}
+
+/* 랜딩 질문 시작 버튼을 강조색 도구로 만든다. */
+.landing-search__submit {
+    min-width: 104px; /* 짧은 문구가 안정적으로 보이는 폭을 확보한다. */
+    padding: 0 18px; /* 버튼 텍스트 주위에 클릭 여백을 둔다. */
+    border: 1px solid var(--color-accent); /* 배경과 같은 경계를 사용한다. */
+    border-radius: 5px; /* 검색 도구보다 작은 모서리를 사용한다. */
+    background: var(--color-accent); /* 랜딩의 유일한 주요 행동을 강조한다. */
+    color: #ffffff; /* 어두운 배경에서 글자 대비를 확보한다. */
+    font-size: 0.9rem; /* 버튼이 질문보다 더 커 보이지 않게 한다. */
+    font-weight: 700; /* 제출 행동을 명확히 표시한다. */
+    cursor: pointer; /* 클릭할 수 있는 버튼임을 나타낸다. */
+    transition: background 140ms ease, border-color 140ms ease; /* 상태 변화만 짧게 부드럽게 한다. */
+}
+
+/* 랜딩 제출 버튼 hover를 같은 강조색 계열로 표시한다. */
+.landing-search__submit:hover {
+    border-color: var(--color-accent-dark); /* hover에서 경계를 어둡게 한다. */
+    background: var(--color-accent-dark); /* hover에서 배경을 어둡게 한다. */
+}
+
+/* 랜딩 글자 수를 오류 영역 반대쪽에 배치한다. */
+.character-count {
+    position: absolute; /* 오류 영역과 같은 줄의 오른쪽을 사용한다. */
+    right: 0; /* 검색 도구 오른쪽 경계에 맞춘다. */
+    bottom: 0; /* 오류 문장 기준선과 맞춘다. */
+    margin: 8px 0 0; /* 검색 도구와 위 간격을 둔다. */
+    color: var(--color-muted); /* 보조 정보는 낮은 대비로 표시한다. */
+    font-size: 0.78rem; /* 글자 수를 작은 보조 정보로 표시한다. */
+}
+
+/* 실제 질문 예시는 카드 대신 얇은 구분선 아래에 배치한다. */
+.example-questions {
+    width: min(780px, 100%); /* 질문 도구와 같은 폭을 사용한다. */
+    margin: 46px auto 0; /* 질문 도구와 예시를 충분히 구분한다. */
+    padding-top: 24px; /* 구분선과 설명 문구 사이를 띄운다. */
+    border-top: 1px solid var(--color-rule); /* 카드 없이 정보 단계를 나눈다. */
+    text-align: left; /* 예시 질문을 읽기 자연스러운 왼쪽에 맞춘다. */
+}
+
+/* 질문 예시 영역의 짧은 설명을 보조 정보로 표시한다. */
+.example-questions > p {
+    margin: 0 0 12px; /* 버튼 목록과 짧은 간격을 둔다. */
+    color: var(--color-muted); /* 핵심 질문 도구보다 낮은 대비로 표시한다. */
+    font-size: 0.78rem; /* 섹션 label 크기로 표시한다. */
+    font-weight: 700; /* 작은 글자도 명확히 읽히게 한다. */
+    letter-spacing: 0.08em; /* 편집물의 분류 표제처럼 보이게 한다. */
+}
+
+/* 예시 질문을 화면 폭에 맞춰 유연하게 줄바꿈한다. */
+.example-questions__list {
+    display: flex; /* 질문을 가로로 배치하되 줄바꿈을 허용한다. */
+    flex-wrap: wrap; /* 좁은 화면에서 다음 줄로 자연스럽게 넘긴다. */
+    gap: 8px 18px; /* 가로와 세로 간격을 각각 안정적으로 둔다. */
+}
+
+/* 예시 질문은 배경 없는 실제 텍스트 버튼으로 만든다. */
+.example-questions button {
+    padding: 5px 0; /* 텍스트 위아래에 클릭 영역을 확보한다. */
+    border: 0; /* 카드처럼 보이는 외곽선을 쓰지 않는다. */
+    border-bottom: 1px solid var(--color-rule); /* 클릭 가능성을 얇은 선으로 표시한다. */
+    background: transparent; /* 랜딩 배경과 자연스럽게 연결한다. */
+    color: var(--color-ink); /* 질문 예시를 충분한 대비로 표시한다. */
+    font-size: 0.9rem; /* 실제 질문보다 한 단계 작은 크기다. */
+    text-align: left; /* 긴 질문이 두 줄일 때 왼쪽 기준을 유지한다. */
+    cursor: pointer; /* 클릭하면 입력이 바뀜을 나타낸다. */
+}
+
+/* 예시 질문 hover에서 단일 강조색으로 선만 바꾼다. */
+.example-questions button:hover {
+    border-color: var(--color-accent); /* hover 위치를 구분선 색으로 표시한다. */
+    color: var(--color-accent-dark); /* hover 글자를 같은 강조색 계열로 바꾼다. */
+}
+
+/* 랜딩 하단에는 최소한의 서비스 설명만 배치한다. */
+.landing-footer {
+    width: min(1180px, calc(100% - 48px)); /* 상단과 같은 내용 폭을 사용한다. */
+    margin: 0 auto; /* 하단 내용을 화면 중앙에 맞춘다. */
+    padding: 22px 0 28px; /* 브라우저 아래와 충분한 간격을 둔다. */
+    border-top: 1px solid var(--color-rule); /* 페이지 끝을 얇은 선으로 구분한다. */
+    color: var(--color-muted); /* 보조 설명은 낮은 대비로 표시한다. */
+    font-size: 0.78rem; /* 페이지 끝 정보에 맞는 크기를 사용한다. */
+}
+
+/* 랜딩 하단 문단의 브라우저 기본 여백을 제거한다. */
+.landing-footer p {
+    margin: 0; /* 구분선 아래의 간격을 padding 하나로 관리한다. */
+}
+
+/* 인증 화면을 상단 브랜드와 중앙 폼으로 구성한다. */
+.auth-page {
+    display: grid; /* 상단과 본문을 두 행으로 나눈다. */
+    min-height: 100dvh; /* 모바일 주소창 변화까지 고려한 높이를 사용한다. */
+    grid-template-rows: auto 1fr; /* 폼 본문이 남은 높이를 채운다. */
+    background: var(--color-paper); /* 랜딩과 같은 미색 배경을 유지한다. */
+}
+
+/* 인증 화면 상단 서비스 이름의 폭을 제한한다. */
+.auth-header {
+    display: flex; /* 텍스트 로고를 세로 중앙에 배치한다. */
+    width: min(1180px, calc(100% - 48px)); /* 큰 화면에서도 상단 폭을 제한한다. */
+    min-height: 70px; /* 안정적인 클릭 영역 높이를 확보한다. */
+    margin: 0 auto; /* 상단 내용을 화면 중앙에 맞춘다. */
+    align-items: center; /* 텍스트 로고를 세로 중앙에 맞춘다. */
+}
+
+/* 인증 폼을 남은 화면 중앙에 배치한다. */
+.auth-main {
+    display: grid; /* 폼 영역을 간단하게 중앙 정렬한다. */
+    place-items: center; /* 가로와 세로 모두 중앙에 둔다. */
+    padding: 44px 24px 84px; /* 작은 화면에서도 가장자리 여백을 확보한다. */
+}
+
+/* 인증 폼은 카드 남발 없이 얇은 선으로만 범위를 구분한다. */
+.auth-panel {
+    width: min(430px, 100%); /* 읽고 입력하기 좋은 최대 폭을 사용한다. */
+    padding: 34px 0 0; /* 위 구분선 아래에 제목 여백을 둔다. */
+    border-top: 2px solid var(--color-ink); /* 백과사전 문서 시작처럼 굵은 선을 사용한다. */
+}
+
+/* 인증 화면 제목을 편집형 serif로 표시한다. */
+.auth-panel h1 {
+    margin: 0; /* 기본 제목 여백을 제거한다. */
+    font-family: var(--font-serif); /* 백과사전 성격의 serif를 사용한다. */
+    font-size: clamp(2.2rem, 6vw, 3.4rem); /* 작은 화면과 큰 화면에서 자연스럽게 조절한다. */
+    font-weight: 600; /* 과하게 무겁지 않은 굵기를 사용한다. */
+    letter-spacing: -0.04em; /* 큰 한글 제목의 간격을 다듬는다. */
+    line-height: 1.12; /* 제목 높이를 안정적으로 유지한다. */
+}
+
+/* 인증 화면 설명을 제목 아래에 배치한다. */
+.auth-description {
+    margin: 12px 0 0; /* 제목과 적당한 간격을 둔다. */
+    color: var(--color-muted); /* 제목보다 낮은 대비로 표시한다. */
+    font-size: 0.95rem; /* 폼 설명에 적합한 본문 크기를 사용한다. */
+}
+
+/* 인증 입력 필드를 일정한 세로 간격으로 배치한다. */
+.auth-form {
+    display: grid; /* 각 필드와 제출 버튼을 세로로 배치한다. */
+    gap: 18px; /* 필드 사이에 충분한 읽기 간격을 둔다. */
+    margin-top: 34px; /* 설명과 첫 입력 사이를 분리한다. */
+}
+
+/* label, 입력, 도움말을 하나의 필드 묶음으로 만든다. */
+.field-group {
+    display: grid; /* 세 요소를 세로 흐름으로 정렬한다. */
+    gap: 7px; /* label과 입력 사이의 관계를 유지한다. */
+}
+
+/* 실제 입력 label을 작은 굵은 글자로 표시한다. */
+.field-group label {
+    font-size: 0.84rem; /* 입력값보다 작게 설명 정보로 표시한다. */
+    font-weight: 700; /* 작은 label도 분명히 읽히게 한다. */
+}
+
+/* 인증 입력을 조용한 흰 표면과 얇은 선으로 만든다. */
+.field-group input {
+    width: 100%; /* 좁은 화면에서도 폼 너비를 채운다. */
+    min-height: 48px; /* 터치와 키보드 입력에 충분한 높이를 확보한다. */
+    padding: 10px 12px; /* 글자와 테두리 사이 여백을 둔다. */
+    border: 1px solid var(--color-rule-strong); /* 입력 경계를 색상 외에도 표시한다. */
+    border-radius: 4px; /* 절제된 작은 모서리만 적용한다. */
+    background: var(--color-surface); /* 입력 영역을 미색 배경과 구분한다. */
+    font-size: 1rem; /* 모바일 자동 확대를 피하는 충분한 크기다. */
+}
+
+/* 인증 입력 focus를 단일 강조색으로 분명히 표시한다. */
+.field-group input:focus {
+    border-color: var(--color-accent); /* focus된 입력 경계를 강조색으로 바꾼다. */
+    outline: 3px solid rgba(40, 89, 75, 0.15); /* 색상과 넓이로 focus를 표시한다. */
+    outline-offset: 1px; /* 입력 경계와 focus 영역을 조금 띄운다. */
+}
+
+/* 입력 규칙 도움말을 보조 정보로 표시한다. */
+.field-group small {
+    color: var(--color-muted); /* 핵심 입력보다 낮은 대비로 표시한다. */
+    font-size: 0.76rem; /* label보다 한 단계 작은 크기를 사용한다. */
+}
+
+/* 로그인과 회원가입 전환 문구를 폼 아래에 배치한다. */
+.auth-switch {
+    margin: 24px 0 0; /* 제출 버튼과 충분한 간격을 둔다. */
+    color: var(--color-muted); /* 보조 안내는 낮은 대비로 표시한다. */
+    font-size: 0.86rem; /* 보조 동작에 맞는 작은 크기를 사용한다. */
+}
+
+/* 인증 전환 링크는 강조색과 밑줄로 조작 가능성을 표시한다. */
+.auth-switch a {
+    color: var(--color-accent-dark); /* 단일 강조색 계열로 링크를 구분한다. */
+    font-weight: 700; /* 주변 안내 문장보다 링크를 강조한다. */
+}
+
+/* 채팅 앱을 상단 바, 기록 레일, 읽기 영역의 grid로 구성한다. */
+.chat-app {
+    display: grid; /* 데스크톱의 2열 구조를 안정적으로 만든다. */
+    width: 100%; /* 브라우저 전체 너비를 사용한다. */
+    height: 100dvh; /* 모바일 동적 높이까지 포함해 화면을 채운다. */
+    min-width: 0; /* grid 자식의 긴 내용이 전체 너비를 밀지 않게 한다. */
+    grid-template-columns: 280px minmax(0, 1fr); /* 좁은 기록 레일과 유동 읽기 영역을 만든다. */
+    grid-template-rows: var(--topbar-height) minmax(0, 1fr); /* 상단 바 아래가 남은 높이를 채운다. */
+    overflow: hidden; /* 기록과 답변만 각자 내부에서 스크롤하게 한다. */
+    background: var(--color-surface); /* 주 읽기 영역을 밝은 표면으로 사용한다. */
+}
+
+/* 채팅 상단 바를 두 열 전체에 고정한다. */
+.chat-topbar {
+    z-index: 30; /* 기록 drawer보다 낮고 본문보다 높게 둔다. */
+    display: grid; /* 브랜드와 메뉴를 좌우로 안정적으로 배치한다. */
+    min-width: 0; /* 좁은 폭에서 메뉴가 grid를 밀지 않게 한다. */
+    grid-column: 1 / -1; /* 기록 레일과 읽기 영역 위를 모두 덮는다. */
+    grid-row: 1; /* 첫 번째 행에 배치한다. */
+    grid-template-columns: auto minmax(0, 1fr) auto; /* 모바일 버튼, 브랜드, 메뉴 구조를 만든다. */
+    align-items: center; /* 모든 상단 조작부를 세로 중앙에 맞춘다. */
+    gap: 16px; /* 조작부 사이에 안정적인 간격을 둔다. */
+    padding: 0 24px; /* 화면 가장자리와 조작부 사이를 띄운다. */
+    border-bottom: 1px solid var(--color-rule); /* 상단 바와 본문을 얇은 선으로 나눈다. */
+    background: rgba(255, 254, 251, 0.98); /* 읽기 영역과 같은 거의 불투명한 표면을 사용한다. */
+}
+
+/* 데스크톱에서 브랜드를 첫 열 시작에 배치한다. */
+.chat-wordmark {
+    grid-column: 1; /* 모바일 기록 버튼이 없을 때 왼쪽에 위치한다. */
+}
+
+/* 채팅 상단 동작을 오른쪽에 한 줄로 배치한다. */
+.chat-actions {
+    display: flex; /* 새 질문, 계정, 로그아웃을 나란히 둔다. */
+    min-width: 0; /* 긴 사용자 이름이 전체 너비를 밀지 않게 한다. */
+    grid-column: 3; /* 상단 바 오른쪽 열에 배치한다. */
+    align-items: center; /* 서로 다른 높이의 요소를 중앙에 맞춘다. */
+    justify-content: flex-end; /* 모든 동작을 오른쪽에 정렬한다. */
+    gap: 14px; /* 동작 사이를 충분히 띄운다. */
+}
+
+/* 현재 계정 이름은 보조 정보로만 표시한다. */
+.account-name {
+    max-width: 160px; /* 긴 사용자 이름이 상단 바를 차지하지 않게 한다. */
+    padding-left: 14px; /* 앞 동작과 구분선 사이를 띄운다. */
+    border-left: 1px solid var(--color-rule); /* 계정 정보의 시작을 얇은 선으로 구분한다. */
+    color: var(--color-muted); /* 조작 버튼보다 낮은 대비로 표시한다. */
+    font-size: 0.82rem; /* 상단 보조 정보 크기를 사용한다. */
+    overflow: hidden; /* 긴 사용자 이름이 밖으로 넘치지 않게 한다. */
+    text-overflow: ellipsis; /* 잘린 이름 끝에 말줄임표를 표시한다. */
+    white-space: nowrap; /* 계정 이름을 한 줄로 유지한다. */
+}
+
+/* 모바일 기록 버튼은 데스크톱에서 숨긴다. */
+.mobile-history-button {
+    display: none; /* 2열 레일이 보이는 화면에서는 필요하지 않다. */
+}
+
+/* 데스크톱 기록 wrapper를 grid의 왼쪽 아래에 배치한다. */
+#conversation-history {
+    min-width: 0; /* 긴 제목이 레일 너비를 밀지 않게 한다. */
+    min-height: 0; /* 내부 기록만 세로 스크롤하게 한다. */
+    grid-column: 1; /* 왼쪽 열에 배치한다. */
+    grid-row: 2; /* 상단 바 아래 행에 배치한다. */
+}
+
+/* 기록 레일을 문서 목차처럼 얇고 절제되게 만든다. */
+.history-rail {
+    display: flex; /* 제목, 상태, 목록을 세로로 배치한다. */
+    width: 100%; /* grid 왼쪽 열 전체를 사용한다. */
+    height: 100%; /* 상단 바 아래 남은 높이를 채운다. */
+    min-height: 0; /* 내부 목록이 실제로 스크롤될 수 있게 한다. */
+    flex-direction: column; /* 기록 요소를 위에서 아래로 쌓는다. */
+    border-right: 1px solid var(--color-rule); /* 주 읽기 영역과 얇은 선으로 나눈다. */
+    background: var(--color-paper); /* 주 읽기 영역보다 조금 어두운 미색을 사용한다. */
+    overflow-y: auto; /* 기록이 많을 때 레일 안에서만 스크롤한다. */
+    overscroll-behavior: contain; /* 기록 끝에서 전체 페이지가 튀지 않게 한다. */
+}
+
+/* 기록 제목과 모바일 닫기 버튼을 같은 줄에 배치한다. */
+.history-rail__header {
+    display: flex; /* 제목과 닫기 버튼을 좌우로 놓는다. */
+    min-height: 62px; /* 레일 상단에 안정적인 높이를 준다. */
+    align-items: center; /* 제목과 버튼을 세로 중앙에 맞춘다. */
+    justify-content: space-between; /* 제목은 왼쪽, 버튼은 오른쪽에 둔다. */
+    padding: 14px 18px 10px; /* 레일 가장자리와 요소 사이를 띄운다. */
+}
+
+/* 기록 영역 제목을 작고 단단한 sans-serif로 표시한다. */
+.history-rail__header h2 {
+    margin: 0; /* 기본 제목 여백을 제거한다. */
+    font-size: 0.84rem; /* 목차 label에 맞는 작은 크기를 사용한다. */
+    font-weight: 750; /* 작은 제목도 분명히 읽히게 한다. */
+    letter-spacing: 0.08em; /* 편집물 목차처럼 보이도록 자간을 넓힌다. */
+}
+
+/* 모바일 닫기 버튼은 데스크톱 레일에서 숨긴다. */
+.history-close {
+    display: none; /* 고정 레일에는 닫기 동작이 필요하지 않다. */
+}
+
+/* 기록 로딩, 오류, 빈 상태에 공통 여백을 준다. */
+.history-state {
+    margin: 0; /* 브라우저 기본 문단 여백을 제거한다. */
+    padding: 20px 18px; /* 레일 가장자리와 상태 문장 사이를 띄운다. */
+    color: var(--color-muted); /* 기록보다 낮은 대비로 상태를 표시한다. */
+    font-size: 0.82rem; /* 목차 안의 상태에 맞는 작은 크기를 사용한다. */
+}
+
+/* 기록 상태 안의 문단 여백을 일관되게 만든다. */
+.history-state p {
+    margin: 0 0 6px; /* 작은 설명이나 버튼과 간격을 둔다. */
+}
+
+/* 기록 오류는 색상과 문장으로 함께 구분한다. */
+.history-state--error {
+    color: var(--color-danger); /* 일반 빈 상태와 오류를 색으로도 구분한다. */
+}
+
+/* 날짜별 기록 그룹이 레일 남은 공간을 사용하게 한다. */
+.history-groups {
+    padding: 8px 10px 26px; /* 레일 가장자리와 마지막 기록 사이를 띄운다. */
+}
+
+/* 각 날짜 그룹 사이에 목차 수준의 여백을 둔다. */
+.history-group + .history-group {
+    margin-top: 22px; /* 오늘, 어제, 이전 날짜를 시각적으로 나눈다. */
+}
+
+/* 날짜 그룹 제목을 작고 낮은 대비로 표시한다. */
+.history-group h3 {
+    margin: 0 8px 7px; /* 기록 항목과 날짜 제목 사이를 조절한다. */
+    color: var(--color-muted); /* 대화 제목보다 낮은 대비를 사용한다. */
+    font-size: 0.7rem; /* 목차의 상위 날짜 label 크기다. */
+    font-weight: 750; /* 작은 글자도 읽히도록 굵기를 준다. */
+    letter-spacing: 0.08em; /* 날짜 그룹을 표제처럼 보이게 한다. */
+}
+
+/* 기록 목록의 브라우저 기본 스타일을 제거한다. */
+.history-group ul {
+    display: grid; /* 기록 항목을 일정한 간격으로 세로 배치한다. */
+    gap: 2px; /* 항목 사이를 촘촘하게 유지한다. */
+    margin: 0; /* 기본 목록 바깥 여백을 제거한다. */
+    padding: 0; /* 기본 목록 안쪽 여백을 제거한다. */
+    list-style: none; /* 불필요한 bullet을 제거한다. */
+}
+
+/* 각 기록 항목 안에 제목과 삭제 동작을 나란히 둔다. */
+.history-group li {
+    display: grid; /* 제목이 남은 폭을 차지하도록 grid를 사용한다. */
+    grid-template-columns: minmax(0, 1fr) auto; /* 제목과 작은 삭제 버튼을 나눈다. */
+    align-items: center; /* 두 버튼을 세로 중앙에 맞춘다. */
+    border-left: 2px solid transparent; /* 선택 표시를 위한 고정 공간을 둔다. */
+}
+
+/* 선택한 대화는 옅은 배경과 선으로 구분한다. */
+.history-group li.is-selected {
+    border-left-color: var(--color-accent); /* 색상 외에 왼쪽 선으로 현재 위치를 표시한다. */
+    background: var(--color-accent-soft); /* 매우 옅은 강조색 배경을 사용한다. */
+}
+
+/* 기록 제목 버튼이 한 줄 목차처럼 보이게 한다. */
+.history-item__select {
+    min-width: 0; /* 긴 제목이 삭제 버튼을 밀지 않게 한다. */
+    padding: 10px 7px 10px 9px; /* 작은 레일에서도 충분한 클릭 높이를 확보한다. */
+    border: 0; /* 카드처럼 보이는 테두리를 제거한다. */
+    background: transparent; /* 선택 배경은 li 하나에서만 관리한다. */
+    color: var(--color-ink); /* 대화 제목을 충분한 대비로 표시한다. */
+    font-size: 0.82rem; /* 좁은 레일에 적합한 제목 크기다. */
+    text-align: left; /* 목차처럼 왼쪽에 맞춘다. */
+    overflow: hidden; /* 긴 제목이 레일 밖으로 나가지 않게 한다. */
+    text-overflow: ellipsis; /* 잘린 제목 끝에 말줄임표를 표시한다. */
+    white-space: nowrap; /* 한 기록을 한 줄로 유지한다. */
+    cursor: pointer; /* 클릭하면 대화가 열림을 나타낸다. */
+}
+
+/* 기록 제목 hover에서 텍스트 색을 강조한다. */
+.history-item__select:hover {
+    color: var(--color-accent-dark); /* 마우스 위치를 단일 강조색으로 표시한다. */
+}
+
+/* 삭제 동작은 평소 조용하고 hover나 focus에서 분명하게 한다. */
+.history-item__delete {
+    padding: 8px 7px; /* 작은 글자에도 실제 클릭 영역을 확보한다. */
+    border: 0; /* 불필요한 버튼 외곽선을 제거한다. */
+    background: transparent; /* 기록 목록의 편집형 표면을 유지한다. */
+    color: var(--color-muted); /* 평소에는 제목보다 낮은 대비로 표시한다. */
+    font-size: 0.68rem; /* 보조 동작에 맞는 작은 크기를 사용한다. */
+    text-decoration: underline; /* 색상 외에도 조작 가능성을 표시한다. */
+    text-decoration-color: transparent; /* 평소 밑줄은 조용히 숨긴다. */
+    cursor: pointer; /* 클릭하면 확인창이 열림을 나타낸다. */
+}
+
+/* 삭제 hover와 focus에서 위험 동작을 분명히 한다. */
+.history-item__delete:hover,
+.history-item__delete:focus-visible {
+    color: var(--color-danger); /* 위험 동작임을 붉은색으로 표시한다. */
+    text-decoration-color: currentColor; /* 밑줄도 함께 표시한다. */
+}
+
+/* 주 채팅 읽기 영역을 오른쪽 아래 grid 칸에 배치한다. */
+.chat-main {
+    position: relative; /* 상단 계정 오류 위치의 기준을 만든다. */
+    display: flex; /* 읽기 영역과 composer를 세로로 배치한다. */
+    min-width: 0; /* 긴 답변이 전체 grid 너비를 밀지 않게 한다. */
+    min-height: 0; /* 읽기 영역이 내부에서 스크롤될 수 있게 한다. */
+    grid-column: 2; /* 데스크톱 오른쪽 열에 배치한다. */
+    grid-row: 2; /* 상단 바 아래 행에 배치한다. */
+    flex-direction: column; /* 읽기 영역 위, composer 아래 구조를 만든다. */
+    background: var(--color-surface); /* 답변을 읽는 밝은 종이 표면을 사용한다. */
+}
+
+/* 로그아웃 실패를 상단 가까이에 작은 알림으로 표시한다. */
+.account-error {
+    position: absolute; /* 읽기 흐름을 밀지 않고 상단에 표시한다. */
+    top: 12px; /* 상단 바 아래와 간격을 둔다. */
+    right: 24px; /* 계정 동작과 같은 오른쪽 기준을 사용한다. */
+    z-index: 10; /* 읽기 콘텐츠보다 위에 보이게 한다. */
+    max-width: min(420px, calc(100% - 48px)); /* 좁은 화면에서도 밖으로 넘치지 않게 한다. */
+    padding: 8px 12px; /* 문장 주변에 안정적인 여백을 둔다. */
+    border: 1px solid #d9a9a4; /* 오류 경계를 색상 외에도 표시한다. */
+    background: var(--color-danger-soft); /* 읽기 영역과 구분되는 옅은 오류 배경을 사용한다. */
+    color: var(--color-danger); /* 오류 문장을 위험 색으로 표시한다. */
+    font-size: 0.8rem; /* 상단 보조 알림에 맞는 크기를 사용한다. */
+}
+
+/* 질문과 답변만 남은 높이 안에서 스크롤하게 한다. */
+.conversation-scroll {
+    flex: 1; /* composer를 제외한 남은 높이를 모두 사용한다. */
+    min-width: 0; /* 긴 답변이 가로 폭을 밀지 않게 한다. */
+    min-height: 0; /* flex 안에서 실제 세로 스크롤이 가능하게 한다. */
+    padding: 56px 28px 48px; /* 읽기 콘텐츠 주변에 넉넉한 여백을 둔다. */
+    overflow-y: auto; /* 답변이 길 때 이 영역 안에서만 스크롤한다. */
+    overflow-x: hidden; /* 답변 때문에 전체 가로 스크롤이 생기지 않게 한다. */
+    overscroll-behavior: contain; /* 끝에서 전체 앱이 튀지 않게 한다. */
+}
+
+/* 기록 로딩 상태를 읽기 영역 중앙에 배치한다. */
+.conversation-state {
+    display: grid; /* 상태 문구를 간단히 중앙 정렬한다. */
+    min-height: 100%; /* 현재 읽기 영역 전체 높이를 사용한다. */
+    place-items: center; /* 상태 문구를 가로와 세로 중앙에 둔다. */
+    color: var(--color-muted); /* 실제 답변보다 낮은 대비로 표시한다. */
+    text-align: center; /* 중앙 배치와 글자 정렬을 맞춘다. */
+}
+
+/* 저장 대화 조회 실패를 읽기 영역 중앙에 표시한다. */
+.conversation-error {
+    width: min(520px, 100%); /* 오류 문장이 너무 넓게 늘어나지 않게 한다. */
+    margin: 12vh auto 0; /* 상단에서 적당히 내려온 위치에 둔다. */
+    padding: 22px 0; /* 얇은 선과 문장 사이를 띄운다. */
+    border-top: 1px solid #d9a9a4; /* 오류 범위를 선으로 구분한다. */
+    border-bottom: 1px solid #d9a9a4; /* 오류 범위를 아래에서도 구분한다. */
+    color: var(--color-danger); /* 오류를 일반 빈 상태와 구분한다. */
+    text-align: center; /* 재시도 동작과 문장을 중앙에 모은다. */
+}
+
+/* 대화 조회 오류 문단의 기본 여백을 조정한다. */
+.conversation-error p {
+    margin: 0 0 8px; /* 재시도 버튼과 간격을 둔다. */
+}
+
+/* 새 대화 빈 상태를 읽기 영역의 차분한 중앙에 둔다. */
+.chat-empty-state {
+    display: grid; /* 표제, 제목, 질문을 세로로 배치한다. */
+    width: min(680px, 100%); /* 큰 화면에서 문구 폭을 제한한다. */
+    min-height: 100%; /* 읽기 영역 안에서 세로 중앙 배치를 가능하게 한다. */
+    margin: 0 auto; /* 가로 중앙에 맞춘다. */
+    place-content: center; /* 세 문구를 읽기 영역 중앙에 둔다. */
+    padding-bottom: 4vh; /* composer와 시각적으로 조금 더 가깝게 한다. */
+    text-align: center; /* 빈 상태 문구를 중앙에 맞춘다. */
+}
+
+/* 빈 상태 핵심 문구를 편집형 제목으로 표시한다. */
+.chat-empty-state h1 {
+    margin: 0; /* 기본 제목 여백을 제거한다. */
+    font-family: var(--font-serif); /* 백과사전 문서의 시작처럼 serif를 사용한다. */
+    font-size: clamp(2rem, 5vw, 3.6rem); /* 작은 화면과 큰 화면에 맞게 조절한다. */
+    font-weight: 600; /* 편집형 제목에 맞는 중간 굵기를 사용한다. */
+    letter-spacing: -0.045em; /* 큰 한글 제목 간격을 다듬는다. */
+    line-height: 1.18; /* 여러 줄 제목의 읽기 행간을 확보한다. */
+    text-wrap: balance; /* 지원 브라우저에서 줄 길이를 균형 있게 만든다. */
+}
+
+/* 빈 상태의 마지막 질문을 제목 아래에 표시한다. */
+.chat-empty-state > p:last-child {
+    margin: 16px 0 0; /* 제목과 적당한 간격을 둔다. */
+    color: var(--color-muted); /* 제목보다 낮은 대비로 표시한다. */
+    font-family: var(--font-serif); /* 편집형 문체를 유지한다. */
+    font-size: 1.1rem; /* 일반 본문보다 조금 크게 다음 행동을 묻는다. */
+}
+
+/* 실제 대화의 읽기 폭을 740px로 제한한다. */
+.conversation-list {
+    width: min(var(--reading-width), 100%); /* 데스크톱 이상적인 답변 폭을 지킨다. */
+    margin: 0 auto; /* 읽기 영역 가운데에 문서를 배치한다. */
+}
+
+/* 질문을 새 문서 항목의 시작처럼 표시한다. */
+.question-entry {
+    padding: 0 0 28px; /* 질문과 다음 답변 사이에 여백을 둔다. */
+    border-bottom: 1px solid var(--color-rule); /* 질문과 답변 계층을 얇은 선으로 나눈다. */
+}
+
+/* 두 번째 이후 질문 앞에 충분한 문서 여백을 둔다. */
+.answer-entry + .question-entry {
+    margin-top: 66px; /* 한 질문과 답변 묶음이 끝났음을 보여준다. */
+}
+
+/* 질문 제목을 편집형 serif로 표시한다. */
+.question-entry h2 {
+    margin: 10px 0 0; /* 메타 정보와 질문 사이를 띄운다. */
+    font-family: var(--font-serif); /* 질문을 문서 제목처럼 표현한다. */
+    font-size: clamp(1.65rem, 4vw, 2.45rem); /* 읽기 폭과 화면 크기에 맞게 조절한다. */
+    font-weight: 600; /* 과하게 굵지 않은 제목 굵기를 사용한다. */
+    letter-spacing: -0.035em; /* 큰 한글 질문 간격을 다듬는다. */
+    line-height: 1.3; /* 긴 질문도 읽기 좋은 행간을 확보한다. */
+    white-space: pre-wrap; /* 사용자가 입력한 줄바꿈을 안전한 텍스트로 유지한다. */
+}
+
+/* 질문과 답변의 종류와 시각을 한 줄에 표시한다. */
+.entry-meta {
+    display: flex; /* 종류와 시각을 좌우로 배치한다. */
+    align-items: center; /* 작은 글자의 기준선을 맞춘다. */
+    justify-content: space-between; /* 종류는 왼쪽, 시각은 오른쪽에 둔다. */
+    gap: 16px; /* 좁은 화면에서도 두 정보가 붙지 않게 한다. */
+    color: var(--color-muted); /* 본문보다 낮은 대비로 표시한다. */
+    font-family: var(--font-sans); /* 메타 정보는 조작부와 같은 sans-serif를 사용한다. */
+    font-size: 0.7rem; /* 본문과 확실히 구분되는 작은 크기다. */
+    font-weight: 700; /* 작은 글자도 알아볼 수 있게 한다. */
+    letter-spacing: 0.09em; /* 편집물의 항목 label처럼 표현한다. */
+    text-transform: uppercase; /* 영문 제품 이름의 표제 형식을 맞춘다. */
+}
+
+/* AI 답변을 문서 본문처럼 질문 아래에 배치한다. */
+.answer-entry {
+    padding: 30px 0 4px; /* 구분선과 답변 사이에 읽기 여백을 둔다. */
+}
+
+/* AI 답변 원문을 안전한 일반 텍스트 문단으로 표시한다. */
+.answer-entry__content {
+    margin: 15px 0 0; /* 메타 정보와 본문 사이를 띄운다. */
+    color: #292c29; /* 긴 본문에 부드러운 잉크색을 사용한다. */
+    font-family: var(--font-serif); /* 답변을 읽는 편집형 문서로 표현한다. */
+    font-size: clamp(1.03rem, 1.6vw, 1.15rem); /* 화면 폭에 따라 조금만 조절한다. */
+    line-height: 1.9; /* 긴 한국어 답변에 넉넉한 행간을 준다. */
+    white-space: pre-wrap; /* 줄바꿈을 HTML 삽입 없이 안전하게 유지한다. */
+    overflow-wrap: anywhere; /* 긴 URL이나 code가 읽기 폭을 밀지 않게 한다. */
+}
+
+/* AI 답변 대기 상태를 가짜 애니메이션 없이 텍스트로 표시한다. */
+.answer-loading {
+    margin-top: 28px; /* 직전 질문 아래에 읽기 간격을 둔다. */
+    padding: 18px 0; /* 위아래로 조용한 상태 공간을 만든다. */
+    border-top: 1px solid var(--color-rule); /* 새 답변 위치를 얇은 선으로 알린다. */
+    color: var(--color-accent); /* 단일 강조색으로 현재 동작을 표시한다. */
+    font-size: 0.86rem; /* 답변 본문보다 작은 상태 크기를 사용한다. */
+    font-weight: 700; /* 작은 상태 문구가 읽히도록 한다. */
+}
+
+/* composer 영역을 읽기 영역 하단에 고정한다. */
+.composer-shell {
+    flex: 0 0 auto; /* 답변이 길어도 composer 높이를 줄이지 않는다. */
+    padding: 14px 28px max(14px, env(safe-area-inset-bottom)); /* 모바일 안전 영역 위에 입력기를 둔다. */
+    border-top: 1px solid var(--color-rule); /* 읽기 문서와 입력 도구를 얇은 선으로 나눈다. */
+    background: rgba(255, 254, 251, 0.98); /* 답변 위에 겹쳐도 읽히는 밝은 표면을 사용한다. */
+}
+
+/* composer 읽기 폭을 답변보다 조금 넓게 제한한다. */
+.composer {
+    width: min(800px, 100%); /* 큰 화면에서도 질문 입력이 지나치게 넓어지지 않게 한다. */
+    margin: 0 auto; /* 주 읽기 영역 가운데에 맞춘다. */
+}
+
+/* composer label과 글자 수를 한 줄에 배치한다. */
+.composer__meta {
+    display: flex; /* label과 글자 수를 좌우로 둔다. */
+    align-items: center; /* 작은 글자의 기준선을 맞춘다. */
+    justify-content: space-between; /* label은 왼쪽, 글자 수는 오른쪽에 둔다. */
+    margin-bottom: 6px; /* 실제 입력 도구와 간격을 둔다. */
+    color: var(--color-muted); /* 보조 정보는 낮은 대비로 표시한다. */
+    font-size: 0.7rem; /* 입력 label과 글자 수를 작은 크기로 표시한다. */
+    font-weight: 700; /* 작은 정보도 읽히도록 굵기를 준다. */
+    letter-spacing: 0.06em; /* 도구 표제처럼 보이게 한다. */
+}
+
+/* textarea와 전송 버튼을 하나의 질문 도구로 묶는다. */
+.composer__control {
+    display: grid; /* textarea가 남은 폭을 채우도록 grid를 사용한다. */
+    grid-template-columns: minmax(0, 1fr) auto; /* 유동 입력과 고정 버튼을 나눈다. */
+    align-items: end; /* 여러 줄 textarea에서 버튼을 아래쪽에 맞춘다. */
+    gap: 8px; /* 입력과 버튼 사이를 분리한다. */
+    padding: 7px; /* 외곽선과 조작부 사이에 작은 여백을 둔다. */
+    border: 1px solid var(--color-rule-strong); /* 질문 도구 전체 경계를 표시한다. */
+    border-radius: 7px; /* 과하지 않은 작은 모서리만 적용한다. */
+    background: var(--color-surface); /* 주 읽기 영역과 같은 밝은 표면을 사용한다. */
+    box-shadow: 0 4px 18px rgba(36, 38, 35, 0.06); /* 한 번의 약한 그림자로 도구를 구분한다. */
+}
+
+/* composer 안에 focus가 오면 전체 경계를 강조한다. */
+.composer__control:focus-within {
+    border-color: var(--color-accent); /* focus를 단일 강조색 경계로 표시한다. */
+    box-shadow: 0 0 0 3px rgba(40, 89, 75, 0.15); /* 색상 외에 넓은 focus 영역을 표시한다. */
+}
+
+/* 질문 textarea가 한 줄부터 여러 줄까지 사용할 수 있게 한다. */
+.composer textarea {
+    width: 100%; /* grid의 남은 너비를 모두 사용한다. */
+    min-width: 0; /* 긴 문자열이 입력 도구를 밀지 않게 한다. */
+    min-height: 48px; /* 한 줄 상태에서도 충분한 터치 높이를 확보한다. */
+    max-height: 160px; /* 입력기가 답변 영역을 지나치게 가리지 않게 한다. */
+    padding: 11px 10px; /* 글자와 입력 경계 사이를 띄운다. */
+    border: 0; /* 바깥 질문 도구 하나만 경계로 사용한다. */
+    background: transparent; /* 바깥 표면과 자연스럽게 연결한다. */
+    font-size: 1rem; /* 모바일 자동 확대를 피하는 충분한 크기다. */
+    line-height: 1.5; /* 여러 줄 질문의 읽기 행간을 확보한다. */
+    resize: vertical; /* 사용자가 필요할 때 여러 줄 높이를 직접 늘릴 수 있게 한다. */
+    outline: 0; /* 공통 focus 대신 부모 focus-within을 사용한다. */
+}
+
+/* 부모가 focus를 표시하므로 textarea 자체 outline은 제거한다. */
+.composer textarea:focus-visible {
+    outline: none; /* 이중 focus 테두리를 막는다. */
+}
+
+/* composer 전송 버튼을 작고 명확한 강조색 버튼으로 만든다. */
+.composer__send {
+    min-width: 68px; /* 상태 문구가 바뀌어도 폭이 흔들리지 않게 한다. */
+    min-height: 44px; /* 터치 가능한 높이를 확보한다. */
+    padding: 8px 12px; /* 버튼 텍스트 주위에 클릭 여백을 둔다. */
+    border: 1px solid var(--color-accent); /* 배경과 같은 강조색 경계를 사용한다. */
+    border-radius: 5px; /* 입력 도구보다 작은 모서리를 사용한다. */
+    background: var(--color-accent); /* 실제 AI 요청을 만드는 행동만 강조한다. */
+    color: #ffffff; /* 어두운 배경에서 글자 대비를 확보한다. */
+    font-size: 0.82rem; /* 입력보다 작게 보조 조작 크기를 사용한다. */
+    font-weight: 750; /* 짧은 버튼 문구를 분명하게 한다. */
+    cursor: pointer; /* 클릭할 수 있는 버튼임을 나타낸다. */
+}
+
+/* composer 전송 hover를 같은 강조색 계열로 표시한다. */
+.composer__send:hover:not(:disabled) {
+    border-color: var(--color-accent-dark); /* hover에서 경계를 어둡게 한다. */
+    background: var(--color-accent-dark); /* hover에서 배경을 어둡게 한다. */
+}
+
+/* Enter와 Shift+Enter 안내를 입력 아래에 표시한다. */
+.composer__help {
+    margin: 5px 0 0; /* 입력 도구와 짧은 간격을 둔다. */
+    color: var(--color-muted); /* 보조 조작 설명은 낮은 대비로 표시한다. */
+    font-size: 0.7rem; /* 짧은 도움말 크기를 사용한다. */
+}
+
+/* composer 오류 위치와 높이를 조절한다. */
+.composer__error {
+    margin-top: 0; /* 도움말 아래에서 불필요한 큰 간격을 제거한다. */
+}
+
+/* AI 답변 주의 문구를 입력기 아래 중앙에 표시한다. */
+.answer-disclaimer {
+    width: min(800px, 100%); /* composer와 같은 폭을 사용한다. */
+    margin: 2px auto 0; /* 오류 공간 아래에 짧은 간격을 둔다. */
+    color: var(--color-muted); /* 핵심 동작보다 낮은 대비로 표시한다. */
+    font-size: 0.66rem; /* 법적 안내처럼 과도하게 눈에 띄지 않게 한다. */
+    text-align: center; /* 입력 도구 아래 중앙에 맞춘다. */
+}
+
+/* 모바일 drawer 뒤를 누를 수 있는 반투명 배경을 만든다. */
+.history-backdrop {
+    display: none; /* 데스크톱 고정 레일에서는 사용하지 않는다. */
+}
+
+/* 삭제 확인창 뒤 콘텐츠를 어둡게 가린다. */
+.dialog-backdrop {
+    position: fixed; /* 스크롤 위치와 관계없이 화면 전체를 덮는다. */
+    inset: 0; /* 위, 오른쪽, 아래, 왼쪽을 모두 0으로 맞춘다. */
+    z-index: 100; /* 상단 바와 drawer보다 위에 표시한다. */
+    display: grid; /* 확인창을 화면 중앙에 배치한다. */
+    place-items: center; /* 가로와 세로 중앙에 둔다. */
+    padding: 24px; /* 작은 화면에서 확인창이 가장자리에 붙지 않게 한다. */
+    background: rgba(22, 24, 22, 0.46); /* 뒤 콘텐츠와 분리되는 반투명 잉크색을 사용한다. */
+}
+
+/* 삭제 확인 내용을 작은 편집형 대화상자로 만든다. */
+.confirm-dialog {
+    width: min(430px, 100%); /* 작은 화면과 큰 화면 모두에서 적절한 폭을 사용한다. */
+    padding: 28px; /* 제목, 설명, 버튼 주위에 충분한 여백을 둔다. */
+    border: 1px solid var(--color-rule-strong); /* 대화상자 경계를 명확히 표시한다. */
+    border-top: 3px solid var(--color-danger); /* 위험 동작임을 선과 색으로 함께 표시한다. */
+    border-radius: 5px; /* 절제된 작은 모서리만 적용한다. */
+    background: var(--color-surface); /* 뒤 배경과 구분되는 밝은 표면을 사용한다. */
+    box-shadow: 0 24px 70px rgba(22, 24, 22, 0.25); /* 하나의 그림자로 확인창 층을 표시한다. */
+}
+
+/* 삭제 확인 제목을 편집형 serif로 표시한다. */
+.confirm-dialog h2 {
+    margin: 0; /* 기본 제목 여백을 제거한다. */
+    font-family: var(--font-serif); /* 문서 결정처럼 보이는 serif를 사용한다. */
+    font-size: 1.7rem; /* 확인 질문을 분명히 읽을 수 있는 크기다. */
+    font-weight: 600; /* 과하게 무겁지 않은 제목 굵기를 사용한다. */
+}
+
+/* 삭제 영향 설명을 제목 아래에 표시한다. */
+.confirm-dialog > p:not(.form-error) {
+    margin: 14px 0 0; /* 제목과 설명 사이를 띄운다. */
+    color: var(--color-muted); /* 제목보다 낮은 대비로 표시한다. */
+    font-size: 0.9rem; /* 긴 제목도 읽기 좋은 설명 크기를 사용한다. */
+}
+
+/* 대화 제목이 길어도 확인창 폭 안에서 줄바꿈한다. */
+.confirm-dialog strong {
+    color: var(--color-ink); /* 삭제 대상을 설명 문장보다 진하게 표시한다. */
+    overflow-wrap: anywhere; /* 긴 제목이 확인창 밖으로 나가지 않게 한다. */
+}
+
+/* 확인창 취소와 삭제 버튼을 오른쪽에 나란히 둔다. */
+.confirm-dialog__actions {
+    display: flex; /* 두 버튼을 한 줄에 배치한다. */
+    justify-content: flex-end; /* 결정을 오른쪽에 모은다. */
+    gap: 10px; /* 안전 동작과 위험 동작 사이를 분리한다. */
+    margin-top: 22px; /* 설명과 버튼 영역 사이를 띄운다. */
+}
+
+/* 900px 아래에서는 기록 레일을 모바일 drawer로 바꾼다. */
+@media (max-width: 899px) {
+    /* 채팅 전체 grid를 한 열 구조로 바꾼다. */
+    .chat-app {
+        grid-template-columns: minmax(0, 1fr); /* 주 읽기 영역이 전체 너비를 사용한다. */
+    }
+
+    /* 모바일 상단 바의 좌우 여백을 줄인다. */
+    .chat-topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto; /* 기록, 브랜드, 메뉴를 세 칸에 둔다. */
+        gap: 10px; /* 좁은 폭에서 조작부 사이 간격을 줄인다. */
+        padding: 0 14px; /* 화면 가장자리 공간을 효율적으로 사용한다. */
+    }
+
+    /* 모바일 기록 버튼을 실제로 표시한다. */
+    .mobile-history-button {
+        display: inline-flex; /* 상단 바에서 클릭 가능한 텍스트 버튼으로 보인다. */
+        grid-column: 1; /* 가장 왼쪽 칸에 배치한다. */
+        align-items: center; /* 버튼 텍스트를 세로 중앙에 맞춘다. */
+    }
+
+    /* 모바일 서비스 이름을 가운데 칸에 배치한다. */
+    .chat-wordmark {
+        grid-column: 2; /* 기록 버튼과 메뉴 사이 가운데 칸을 사용한다. */
+        justify-self: start; /* 작은 화면에서 자연스럽게 왼쪽 기준을 사용한다. */
+    }
+
+    /* 모바일 상단 동작을 가장 오른쪽 칸에 배치한다. */
+    .chat-actions {
+        grid-column: 3; /* 상단 바 오른쪽 칸을 사용한다. */
+        gap: 5px; /* 좁은 화면에서 버튼 사이 간격을 줄인다. */
+    }
+
+    /* 모바일에서는 사용자 이름을 숨겨 핵심 동작 공간을 확보한다. */
+    .account-name {
+        display: none; /* 로그아웃과 새 질문 버튼을 우선한다. */
+    }
+
+    /* 기록 wrapper가 모바일 grid 칸을 차지하지 않게 한다. */
+    #conversation-history {
+        position: static; /* drawer 자체의 fixed 위치만 사용한다. */
+        grid-column: auto; /* 데스크톱 grid 열 배치를 해제한다. */
+        grid-row: auto; /* 데스크톱 grid 행 배치를 해제한다. */
+    }
+
+    /* 기록 레일을 화면 왼쪽에서 들어오는 drawer로 바꾼다. */
+    .history-rail {
+        position: fixed; /* 주 읽기 영역과 별도로 화면 위에 표시한다. */
+        top: 0; /* 화면 맨 위부터 시작한다. */
+        bottom: 0; /* 화면 맨 아래까지 채운다. */
+        left: 0; /* 화면 왼쪽을 기준으로 배치한다. */
+        z-index: 70; /* 반투명 배경과 상단 바보다 위에 둔다. */
+        width: min(86vw, 320px); /* 375px에서도 읽기 영역 일부가 보이는 폭을 사용한다. */
+        height: 100dvh; /* 모바일 동적 높이까지 drawer가 채운다. */
+        border-right: 1px solid var(--color-rule-strong); /* drawer 경계를 조금 더 분명히 한다. */
+        box-shadow: 18px 0 44px rgba(22, 24, 22, 0.16); /* drawer가 위 층임을 한 번의 그림자로 표시한다. */
+        transform: translateX(-105%); /* 닫힌 상태에서 화면 왼쪽 밖으로 이동한다. */
+        visibility: hidden; /* 닫힌 drawer가 키보드 focus를 받지 않게 한다. */
+        transition: transform 180ms ease, visibility 180ms step-end; /* 열고 닫는 위치 변화를 짧게 표시한다. */
+    }
+
+    /* 모바일 drawer가 열린 상태를 화면 안으로 이동한다. */
+    .history-rail.is-open {
+        transform: translateX(0); /* drawer를 화면 왼쪽 안으로 이동한다. */
+        visibility: visible; /* 열린 기록 버튼이 키보드 focus를 받을 수 있게 한다. */
+        transition: transform 180ms ease, visibility 0ms step-start; /* 열 때 즉시 조작 가능하게 한다. */
+    }
+
+    /* 모바일 drawer 닫기 버튼을 표시한다. */
+    .history-close {
+        display: inline-flex; /* 기록 제목 옆에 실제 버튼으로 보이게 한다. */
+        align-items: center; /* 버튼 텍스트를 세로 중앙에 맞춘다. */
+    }
+
+    /* 열린 drawer 뒤에 반투명 배경 버튼을 표시한다. */
+    .history-backdrop {
+        position: fixed; /* 화면 전체를 덮는다. */
+        inset: 0; /* 네 방향을 모두 화면 경계에 맞춘다. */
+        z-index: 60; /* drawer 아래, 주 화면 위에 배치한다. */
+        display: block; /* 모바일 열린 상태에서 실제 버튼을 표시한다. */
+        width: 100%; /* 화면 전체 너비를 사용한다. */
+        height: 100%; /* 화면 전체 높이를 사용한다. */
+        padding: 0; /* 불필요한 내부 여백을 제거한다. */
+        border: 0; /* 전체 배경에 버튼 외곽선을 표시하지 않는다. */
+        background: rgba(22, 24, 22, 0.34); /* drawer와 주 화면을 시각적으로 분리한다. */
+        cursor: pointer; /* 배경을 눌러 닫을 수 있음을 나타낸다. */
+    }
+
+    /* 모바일 주 채팅 영역이 전체 한 열을 사용하게 한다. */
+    .chat-main {
+        grid-column: 1; /* 유일한 grid 열 전체를 사용한다. */
+        grid-row: 2; /* 상단 바 아래 행을 사용한다. */
+    }
+
+    /* 모바일 읽기 영역의 좌우 여백을 줄인다. */
+    .conversation-scroll {
+        padding: 38px 20px 32px; /* 답변 폭을 확보하면서 가장자리 여백을 유지한다. */
+    }
+
+    /* 모바일 composer의 좌우 여백을 줄이고 안전 영역은 유지한다. */
+    .composer-shell {
+        padding: 11px 16px max(11px, env(safe-area-inset-bottom)); /* 브라우저 chrome 위에서 접근 가능하게 한다. */
+    }
+}
+
+/* 560px 아래에서는 상단과 질문 도구를 더 압축한다. */
+@media (max-width: 559px) {
+    /* 랜딩과 인증 상단의 좌우 여백을 줄인다. */
+    .landing-header,
+    .auth-header {
+        width: calc(100% - 32px); /* 375px 화면에서도 메뉴 공간을 확보한다. */
+    }
+
+    /* 랜딩 상단 메뉴의 간격을 줄인다. */
+    .landing-nav,
+    .auth-links {
+        gap: 10px; /* 좁은 폭에서 두 인증 동작이 들어가게 한다. */
+    }
+
+    /* 랜딩 질문 중심 영역의 위아래 여백을 줄인다. */
+    .landing-main {
+        padding: 40px 16px 56px; /* 375px 화면에서도 핵심 요소가 한 화면에 들어가게 한다. */
+    }
+
+    /* 랜딩 핵심 제목의 최소 크기를 조금 낮춘다. */
+    .landing-hero h1 {
+        font-size: clamp(2.35rem, 13vw, 3.5rem); /* 한글 제목이 화면 밖으로 넘치지 않게 한다. */
+    }
+
+    /* 랜딩 입력과 버튼을 좁은 화면에서도 같은 줄에 유지한다. */
+    .landing-search__control {
+        padding: 5px; /* 작은 화면에서 내부 여백을 절약한다. */
+    }
+
+    /* 랜딩 질문 입력의 좌우 여백을 줄인다. */
+    .landing-search input {
+        padding: 9px 10px; /* 입력 가능한 너비를 최대한 확보한다. */
+        font-size: 1rem; /* iOS 자동 확대를 피하는 크기를 유지한다. */
+    }
+
+    /* 랜딩 제출 버튼을 짧고 터치 가능한 크기로 만든다. */
+    .landing-search__submit {
+        min-width: 84px; /* 375px 화면에서 입력 폭을 확보한다. */
+        padding: 0 11px; /* 짧은 문구 주위의 클릭 여백을 유지한다. */
+        font-size: 0.8rem; /* 입력보다 작게 표시한다. */
+    }
+
+    /* 랜딩 하단의 좌우 여백도 상단과 맞춘다. */
+    .landing-footer {
+        width: calc(100% - 32px); /* 375px 화면에서 안정적인 가장자리 여백을 둔다. */
+    }
+
+    /* 모바일 상단 바의 서비스 이름 자간을 조금 줄인다. */
+    .chat-wordmark {
+        font-size: 0.9rem; /* 좁은 상단 바에 맞는 크기를 사용한다. */
+        letter-spacing: 0.1em; /* 정체성을 유지하면서 폭을 줄인다. */
+    }
+
+    /* 모바일 상단 텍스트 버튼의 좌우 공간을 줄인다. */
+    .chat-topbar .text-button {
+        padding-right: 4px; /* 버튼 사이 실제 간격을 절약한다. */
+        padding-left: 4px; /* 버튼 사이 실제 간격을 절약한다. */
+        font-size: 0.78rem; /* 세 동작이 한 줄에 들어가게 한다. */
+    }
+
+    /* 작은 화면에서는 새 질문 문구를 유지하되 메뉴 간격을 줄인다. */
+    .chat-actions {
+        gap: 1px; /* 상단 바 가로 넘침을 막는다. */
+    }
+
+    /* 모바일 읽기 영역의 가장자리 여백을 한 번 더 줄인다. */
+    .conversation-scroll {
+        padding: 32px 16px 26px; /* 375px에서도 답변 본문 폭을 충분히 확보한다. */
+    }
+
+    /* 긴 질문 제목의 모바일 크기를 읽기 좋게 조절한다. */
+    .question-entry h2 {
+        font-size: 1.55rem; /* 긴 한글 질문이 너무 많은 줄을 차지하지 않게 한다. */
+    }
+
+    /* 모바일 답변 행간을 조금 줄여 읽기 흐름을 유지한다. */
+    .answer-entry__content {
+        font-size: 1rem; /* 본문 읽기 크기를 유지한다. */
+        line-height: 1.82; /* 좁은 폭에서 지나치게 긴 페이지가 되지 않게 한다. */
+    }
+
+    /* 모바일 composer의 좌우 여백을 최소화한다. */
+    .composer-shell {
+        padding-right: 10px; /* 375px에서 입력 너비를 확보한다. */
+        padding-left: 10px; /* 375px에서 입력 너비를 확보한다. */
+    }
+
+    /* 모바일 전송 버튼의 폭을 조금 줄인다. */
+    .composer__send {
+        min-width: 60px; /* 입력할 수 있는 가로 공간을 확보한다. */
+        padding-right: 9px; /* 터치 영역을 유지하면서 폭을 줄인다. */
+        padding-left: 9px; /* 터치 영역을 유지하면서 폭을 줄인다. */
+    }
+}
+
+/* 애니메이션 축소를 요청한 사용자의 움직임을 최소화한다. */
+@media (prefers-reduced-motion: reduce) {
+    /* 문서 이동을 즉시 처리한다. */
+    html {
+        scroll-behavior: auto; /* 부드러운 스크롤 움직임을 제거한다. */
+    }
+
+    /* 모든 요소의 transition과 animation 시간을 사실상 제거한다. */
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important; /* 요소별 부드러운 스크롤도 제거한다. */
+        transition-duration: 0.01ms !important; /* 상태 변화 애니메이션을 즉시 끝낸다. */
+        animation-duration: 0.01ms !important; /* 반복 애니메이션이 있다면 즉시 끝낸다. */
+        animation-iteration-count: 1 !important; /* 반복 움직임을 한 번으로 제한한다. */
+    }
+}
