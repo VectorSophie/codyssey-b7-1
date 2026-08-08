@@ -74,6 +74,20 @@ why in the PR description. If a shared file's interface must change
 (notably `docs/API_CONTRACT.md`), document the reason clearly in the PR
 and update the contract doc in the same PR.
 
+## Comment Style
+
+Backend code (`app/`) defaults to no comments unless something is genuinely
+non-obvious — a hidden constraint, a workaround, a reason a value is what it
+is.
+
+The frontend (`frontend/src`) instead comments nearly every line, including
+`styles.css`. This wasn't an explicit project requirement going in; it's
+Agent 2's chosen style, flagged in PR #8 review and recorded here rather
+than rewritten, since it's already-tested, working UI code and a mass
+comment-stripping pass would touch every file for no functional gain. New
+frontend code doesn't have to match this density; existing files aren't
+being cleaned up as a background task.
+
 ## Branch Protection (enforced)
 
 The repo is public, so the following GitHub branch protection rules are

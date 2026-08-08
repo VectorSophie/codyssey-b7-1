@@ -4,6 +4,9 @@ import httpx
 from app.config import settings
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Required OPENROUTER_MODEL value -- a config sanity check only. The actual
+# request never sends this string; see FREE_MODEL_FALLBACKS below.
 FREE_MODEL = "openrouter/free"
 
 # openrouter/free is an auto-router, not a single model -- its pool includes
