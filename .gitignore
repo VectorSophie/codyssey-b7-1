@@ -13,3 +13,8 @@ venv/
 htmlcov/
 logs/
 .DS_Store
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo

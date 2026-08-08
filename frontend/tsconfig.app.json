@@ -1,0 +1,37 @@
+{
+    // TypeScript가 React 앱 코드를 검사할 때 사용할 규칙이다.
+    "compilerOptions": {
+        // 최신 브라우저에서 지원하는 JavaScript 문법을 만든다.
+        "target": "ES2022",
+        // 브라우저와 최신 JavaScript 기본 타입을 불러온다.
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        // 각 파일을 ES 모듈 방식으로 유지한다.
+        "module": "ESNext",
+        // Vite 방식으로 import 경로를 찾는다.
+        "moduleResolution": "Bundler",
+        // 확장자를 생략한 TypeScript import를 허용한다.
+        "allowImportingTsExtensions": false,
+        // 별도 JavaScript 파일을 만들지 않고 타입만 검사한다.
+        "noEmit": true,
+        // React 17 이상 JSX 변환 방식을 사용한다.
+        "jsx": "react-jsx",
+        // Vite처럼 파일별 변환이 가능한 코드인지 확인한다.
+        "isolatedModules": true,
+        // 잘못된 파일 이름 대소문자를 조기에 찾는다.
+        "forceConsistentCasingInFileNames": true,
+        // 외부 라이브러리 타입 파일의 내부 검사는 생략한다.
+        "skipLibCheck": true,
+        // 잠재적인 타입 오류를 엄격하게 검사한다.
+        "strict": true,
+        // 사용하지 않는 지역 변수를 오류로 처리한다.
+        "noUnusedLocals": true,
+        // 사용하지 않는 함수 매개변수를 오류로 처리한다.
+        "noUnusedParameters": true,
+        // switch 문의 빠진 분기를 오류로 찾는다.
+        "noFallthroughCasesInSwitch": true,
+        // Vite가 제공하는 브라우저 환경 타입을 불러온다.
+        "types": ["vite/client", "vitest/globals"]
+    },
+    // 실제 검사할 앱과 테스트 코드를 지정한다.
+    "include": ["src"]
+}
