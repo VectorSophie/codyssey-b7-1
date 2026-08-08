@@ -22,16 +22,44 @@ from app import main as main_module
 from app.main import app
 
 
+_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+
+def _is_loopback(address) -> bool:
+    host = address[0] if isinstance(address, tuple) else address
+    return host in _LOOPBACK_HOSTS
+
+
 @pytest.fixture(autouse=True)
 def block_external_network(monkeypatch):
-    """Fail fast if a test accidentally tries to use a real network socket."""
+    """Fail fast if a test accidentally tries to reach a real external host.
 
-    def blocked(*_args, **_kwargs):
-        raise AssertionError("external network access is forbidden during tests")
+    Loopback connections are allowed: Windows' asyncio ProactorEventLoop opens
+    a real 127.0.0.1 socketpair internally for its self-pipe, so a blanket
+    block breaks every async test (and TestClient) on Windows.
+    """
+    orig_create_connection = socket.create_connection
+    orig_connect = socket.socket.connect
+    orig_connect_ex = socket.socket.connect_ex
 
-    monkeypatch.setattr(socket, "create_connection", blocked)
-    monkeypatch.setattr(socket.socket, "connect", blocked)
-    monkeypatch.setattr(socket.socket, "connect_ex", blocked)
+    def guarded_create_connection(address, *args, **kwargs):
+        if not _is_loopback(address):
+            raise AssertionError("external network access is forbidden during tests")
+        return orig_create_connection(address, *args, **kwargs)
+
+    def guarded_connect(self, address, *args, **kwargs):
+        if not _is_loopback(address):
+            raise AssertionError("external network access is forbidden during tests")
+        return orig_connect(self, address, *args, **kwargs)
+
+    def guarded_connect_ex(self, address, *args, **kwargs):
+        if not _is_loopback(address):
+            raise AssertionError("external network access is forbidden during tests")
+        return orig_connect_ex(self, address, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
 
 
 @pytest.fixture()
