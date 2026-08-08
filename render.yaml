@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: everything
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./app.db
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openrouter/free
+      - key: AI_TIMEOUT_SECONDS
+        value: "20"
+      - key: SESSION_COOKIE_NAME
+        value: everything_session
+      - key: SESSION_HTTPS_ONLY
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
