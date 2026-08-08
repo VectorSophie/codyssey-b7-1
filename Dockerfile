@@ -2,7 +2,7 @@
 # Only used to satisfy Render's lack of a native mixed Python+Node build
 # (see docs/RENDER_DEPLOY.md) — the app itself has no other Docker dependency.
 
-FROM node:20-slim AS frontend-build
+FROM node:24-slim AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
