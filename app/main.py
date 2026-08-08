@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -17,6 +18,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="EVERYTHING", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def attach_chat_request_id(request: Request, call_next):
+    """Give every chat attempt a correlation id, including rejected requests."""
+    if request.url.path != "/api/chat":
+        return await call_next(request)
+
+    request.state.request_id = uuid.uuid4().hex
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request.state.request_id
+    return response
 
 app.include_router(auth.router)
 app.include_router(chat.router)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_auth
@@ -19,9 +19,18 @@ router = APIRouter(prefix="/api", tags=["chat"])
 
 @router.post("/chat", response_model=ChatResponse)
 async def post_chat(
-    payload: ChatRequest, user: User = Depends(require_auth), db: Session = Depends(get_db)
+    payload: ChatRequest,
+    request: Request,
+    user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
 ):
-    result = await handle_chat(db, user, payload.session_id, payload.message)
+    result = await handle_chat(
+        db,
+        user,
+        payload.session_id,
+        payload.message,
+        request_id=request.state.request_id,
+    )
     return ChatResponse(
         session_id=result["session_id"], message=MessageOut.model_validate(result["message"])
     )

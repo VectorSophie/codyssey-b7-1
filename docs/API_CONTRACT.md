@@ -35,6 +35,11 @@ existing one.
 
 ## Chat response (implemented)
 
+Every `POST /api/chat` response, including authentication and validation
+failures, includes an `X-Request-ID` header. Successful requests persist the
+same id on both the user and assistant messages so an evaluator can correlate
+the HTTP request, operational logs, and database rows.
+
 ```json
 {
   "success": true,
@@ -111,6 +116,13 @@ NOT_FOUND           404  — chat session doesn't exist or isn't owned by
 - blank messages are rejected (`EMPTY_INPUT`)
 - maximum user question length: 2000 characters (`INPUT_TOO_LONG`)
 - username: 3-50 chars; password: min 8 chars (registration)
+
+## OpenRouter cost guard
+
+The AI boundary fails closed unless `OPENROUTER_MODEL` is exactly
+`openrouter/free`. A missing API key or any other model value produces the
+controlled `AI_API_ERROR` path without opening a network connection. There is
+no retry loop and no paid fallback.
 
 ## Auth model
 
