@@ -1,11 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class ChatRequest(BaseModel):
     session_id: int | None = None
-    message: str = Field(min_length=0, max_length=10_000)  # length rule enforced in service
+    # The service owns the 2,000-character rule so every oversized string,
+    # including very large ones, receives the contracted INPUT_TOO_LONG code.
+    message: str
 
 
 class MessageOut(BaseModel):

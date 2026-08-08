@@ -3,6 +3,7 @@
 Persistence happens only after a successful AI call, so a failed AI call never
 leaves a half-answered session or orphaned message behind.
 """
+from datetime import datetime, timezone
 import time
 import uuid
 
@@ -39,8 +40,14 @@ def get_owned_session(db: Session, session_id: int, user: User) -> ChatSession:
     return session
 
 
-async def handle_chat(db: Session, user: User, session_id: int | None, message: str) -> dict:
-    request_id = uuid.uuid4().hex
+async def handle_chat(
+    db: Session,
+    user: User,
+    session_id: int | None,
+    message: str,
+    request_id: str | None = None,
+) -> dict:
+    request_id = request_id or uuid.uuid4().hex
     log_event("request_received", request_id=request_id, user_id=user.id, session_id=session_id)
 
     question = message.strip()
@@ -62,17 +69,45 @@ async def handle_chat(db: Session, user: User, session_id: int | None, message: 
     try:
         answer = await call_openrouter(context_messages)
     except AITimeoutError as exc:
-        log_event("ai_call_failed", request_id=request_id, error_code=AI_TIMEOUT)
+        latency_ms = int((time.monotonic() - started) * 1000)
+        log_event(
+            "ai_call_failed",
+            request_id=request_id,
+            user_id=user.id,
+            session_id=session_id,
+            latency_ms=latency_ms,
+            error_code=AI_TIMEOUT,
+        )
         raise AppError(AI_TIMEOUT, "the AI service timed out", status_code=504) from exc
     except AIRateLimitError as exc:
-        log_event("ai_call_failed", request_id=request_id, error_code=AI_RATE_LIMIT)
+        latency_ms = int((time.monotonic() - started) * 1000)
+        log_event(
+            "ai_call_failed",
+            request_id=request_id,
+            user_id=user.id,
+            session_id=session_id,
+            latency_ms=latency_ms,
+            error_code=AI_RATE_LIMIT,
+        )
         raise AppError(AI_RATE_LIMIT, "the AI service is rate limited, try again shortly", status_code=429) from exc
     except AIAPIError as exc:
-        log_event("ai_call_failed", request_id=request_id, error_code=AI_API_ERROR)
+        latency_ms = int((time.monotonic() - started) * 1000)
+        log_event(
+            "ai_call_failed",
+            request_id=request_id,
+            user_id=user.id,
+            session_id=session_id,
+            latency_ms=latency_ms,
+            error_code=AI_API_ERROR,
+        )
         raise AppError(AI_API_ERROR, "the AI service returned an error", status_code=502) from exc
     latency_ms = int((time.monotonic() - started) * 1000)
     log_event(
-        "ai_call_success", request_id=request_id, user_id=user.id, latency_ms=latency_ms
+        "ai_call_success",
+        request_id=request_id,
+        user_id=user.id,
+        session_id=session_id,
+        latency_ms=latency_ms,
     )
 
     try:
@@ -80,6 +115,9 @@ async def handle_chat(db: Session, user: User, session_id: int | None, message: 
             session = ChatSession(user_id=user.id, title=_make_title(question))
             db.add(session)
             db.flush()  # assign session.id
+        else:
+            # A follow-up makes an existing conversation recent again.
+            session.updated_at = datetime.now(timezone.utc)
 
         user_message = Message(
             session_id=session.id,
@@ -101,7 +139,12 @@ async def handle_chat(db: Session, user: User, session_id: int | None, message: 
         db.refresh(assistant_message)
     except Exception as exc:
         db.rollback()
-        log_event("db_save_failed", request_id=request_id, user_id=user.id)
+        log_event(
+            "db_save_failed",
+            request_id=request_id,
+            user_id=user.id,
+            session_id=session.id if session is not None else session_id,
+        )
         raise AppError(DB_SAVE_ERROR, "failed to save the conversation", status_code=500) from exc
 
     log_event("db_save_success", request_id=request_id, user_id=user.id, session_id=session.id)

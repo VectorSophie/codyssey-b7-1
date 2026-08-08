@@ -6,10 +6,23 @@ from app.config import settings
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger("everything")
 
-_FORBIDDEN_KEYS = {"password", "cookie", "authorization", "api_key", "openrouter_api_key"}
+_FORBIDDEN_KEY_PARTS = (
+    "password",
+    "secret",
+    "token",
+    "cookie",
+    "authorization",
+    "api_key",
+    "apikey",
+)
+
+
+def _is_forbidden(key: str) -> bool:
+    normalized = key.lower().replace("-", "_")
+    return any(part in normalized for part in _FORBIDDEN_KEY_PARTS)
 
 
 def log_event(event: str, **fields) -> None:
-    safe_fields = {k: v for k, v in fields.items() if k.lower() not in _FORBIDDEN_KEYS}
+    safe_fields = {k: v for k, v in fields.items() if not _is_forbidden(k)}
     kv = " ".join(f"{k}={v}" for k, v in safe_fields.items())
     logger.info("event=%s %s", event, kv)
