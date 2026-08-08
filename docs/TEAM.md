@@ -27,8 +27,11 @@ integrate against, but should not redesign Agent 2's final UI.
 **Branch:** `feature/frontend-experience`
 
 **Owns:**
-- `app/templates/**`
-- `app/static/**`
+- `frontend/**` (React + Vite + TypeScript SPA — see docs/ARCHITECTURE.md
+  "Frontend" section for the accepted deviation from the original
+  Jinja2/vanilla-JS plan)
+- `app/templates/**`, `app/static/**` are now unused placeholders from
+  Agent 1's backend bootstrap, not actively owned/maintained by either agent
 
 **Responsibilities:**
 - design system (typography, layout, spacing, color)

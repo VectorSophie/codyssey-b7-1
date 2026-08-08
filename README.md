@@ -35,9 +35,17 @@ the Phase 0 project scaffold):
 - FastAPI
 - SQLite
 - SQLAlchemy
-- Jinja2
-- vanilla JavaScript
 - OpenRouter (free tier only)
+- React + Vite + TypeScript (frontend — see "Deviation" note below)
+
+> **Deviation from the original plan:** the project was initially scoped for
+> server-rendered Jinja2 templates + vanilla JavaScript, with no Node build
+> pipeline. Agent 2 built the frontend as a React/Vite/TypeScript SPA
+> (`frontend/`) that talks to the backend purely over the JSON API instead.
+> This was reviewed and accepted rather than rebuilt, to avoid discarding
+> working, tested UI code. `app/templates/` and `app/static/` remain in the
+> repo as minimal placeholders from Agent 1's backend bootstrap and are not
+> the served frontend.
 
 ## Repository Structure
 
@@ -45,7 +53,8 @@ the Phase 0 project scaffold):
 app/
   main.py, config.py, database.py, dependencies.py   — app wiring (Agent 1)
   models/, schemas/, routers/, services/              — backend logic (Agent 1)
-  templates/, static/                                 — frontend (Agent 2)
+  templates/, static/                                 — placeholder pages, superseded by frontend/ (see Deviation note)
+frontend/                                              — React + Vite + TypeScript SPA (Agent 2)
 tests/                                                 — automated tests (Agent 3)
 scripts/                                               — ops/QA scripts (Agent 3)
 docs/                                                  — coordination docs (all agents)
@@ -98,8 +107,11 @@ tier (`openrouter/free`) is used, with no automatic fallback to paid models.
 
 ## Status
 
-**Phase 0 (repository bootstrap) only.** This repository currently
-contains the project directory skeleton and coordination documentation
-(branch strategy, ownership, API contract, architecture plan, task list).
-No backend, frontend, or test implementation exists yet. Implementation
-work begins on the three feature branches listed above.
+- **Backend (Agent 1):** implemented and merged into `develop` — auth,
+  chat, history APIs, OpenRouter integration, structured logging. See
+  `docs/API_CONTRACT.md`.
+- **Frontend (Agent 2):** implemented on `feature/frontend-experience` as a
+  React/Vite SPA under `frontend/` (see the Deviation note above); not yet
+  merged into `develop`.
+- **QA/Ops/Docs (Agent 3):** test suite and evaluator/deployment docs
+  implemented on `feature/qa-ops-docs`; PR open, pending final review.
