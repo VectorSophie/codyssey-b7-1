@@ -79,9 +79,11 @@ Browser
 | `app/main.py` | 애플리케이션, 예외 처리, `/health`, 채팅 request ID |
 | `app/routers/auth.py` | 회원가입, 로그인, 로그아웃, 현재 사용자 |
 | `app/routers/chat.py` | 질문, 목록, 상세 조회, 삭제 API |
+| `app/routers/admin.py` | 관리자 로그 조회 API (`ADMIN_USERNAMES` 필요) |
 | `app/services/ai.py` | OpenRouter 무료 모델 HTTP 경계 |
 | `app/services/context.py` | 최근 대화 문맥 구성 및 크기 제한 |
-| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그 |
+| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그, 관리자 로그 조회 |
+| `app/services/users.py` | `users` 테이블에 직접 접근하는 유일한 모듈 |
 | `app/models/` | 사용자, 대화 세션, 메시지 모델 |
 | `app/templates/`, `app/static/` | 서버 렌더링 UI와 브라우저 동작 |
 | `tests/` | 외부 네트워크 없는 자동 검증 |
@@ -200,6 +202,7 @@ uvicorn app.main:app --reload
 | `GET` | `/api/chats` | 예 | 내 대화 목록 |
 | `GET` | `/api/chats/{session_id}` | 예 | 내 대화와 메시지 조회 |
 | `DELETE` | `/api/chats/{session_id}` | 예 | 내 대화 삭제 |
+| `GET` | `/api/admin/logs` | 예 (admin) | 최근 메시지 로그 (`scripts/check_logs.sql`과 동일 데이터) |
 | `GET` | `/health` | 아니요 | AI를 호출하지 않는 상태 확인 |
 
 ### 인증 예시
@@ -276,6 +279,7 @@ Content-Type: application/json
 | `INVALID_CREDENTIALS` | 로그인 실패 |
 | `NOT_FOUND` | 없거나 소유하지 않은 대화 |
 | `TOO_MANY_REQUESTS` | 사용자당 60초에 20회를 초과한 채팅 요청 |
+| `ADMIN_REQUIRED` | `ADMIN_USERNAMES`에 없는 사용자의 관리자 API 접근 |
 
 세부 응답 형태는 `docs/API_CONTRACT.md`를 참고합니다.
 

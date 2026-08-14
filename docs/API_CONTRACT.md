@@ -18,6 +18,8 @@ GET    /api/chats
 GET    /api/chats/{session_id}
 DELETE /api/chats/{session_id}
 
+GET    /api/admin/logs
+
 GET    /health
 ```
 
@@ -111,6 +113,8 @@ NOT_FOUND           404  — chat session doesn't exist or isn't owned by
                             same response so existence isn't leaked)
 TOO_MANY_REQUESTS   429  — more than 20 chat requests from one user within
                             60 seconds (see "Per-user chat rate limit" below)
+ADMIN_REQUIRED      403  — authenticated, but not listed in ADMIN_USERNAMES
+                            (see "Admin log access" below)
 ```
 
 ## Input constraints
@@ -139,6 +143,21 @@ one is normal and must not be throttled. Implemented as an in-process
 dict in `app/services/chat.py`; correct for this project's single-instance
 deployment (see `docs/ARCHITECTURE.md`), and would need a shared store
 (e.g. Redis) only if ever run with more than one worker process.
+
+## Admin log access
+
+`GET /api/admin/logs` is a web-facing equivalent of
+`scripts/check_logs.sql` -- same rows (the most recent 50 messages, joined
+with their session and user), same exclusion of `users.password_hash`, same
+person who'd run it (whoever operates the deployment). Gated by
+`require_admin` (`app/dependencies.py`), which checks the requesting
+user's username against `ADMIN_USERNAMES`. No `is_admin` database column:
+this project has no migration tooling (`Base.metadata.create_all()` only
+creates missing tables, it never alters an existing one), so a new column
+wouldn't retroactively apply to an already-deployed database without a
+manual `ALTER TABLE`. A config-driven allowlist works immediately and needs
+no schema change; it doesn't scale past "a small, fixed set of trusted
+operators," which is what this project actually has.
 
 ## Auth model
 

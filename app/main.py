@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import init_db
 from app.errors import INTERNAL_ERROR, NOT_FOUND, AppError
 from app.logging_utils import log_event
-from app.routers import auth, chat
+from app.routers import admin, auth, chat
 
 FRONTEND_DIST = "frontend/dist"
 
@@ -36,6 +36,7 @@ async def attach_chat_request_id(request: Request, call_next):
 
 app.include_router(auth.router)
 app.include_router(chat.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(AppError)

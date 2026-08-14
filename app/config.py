@@ -23,6 +23,16 @@ class Settings:
 
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
+    # Comma-separated usernames allowed to call /api/admin/*. A config
+    # allowlist rather than an is_admin DB column: this project has no
+    # migration tooling (Base.metadata.create_all only creates missing
+    # tables, it doesn't alter existing ones), so a new column wouldn't
+    # apply to an already-deployed database. Empty by default -- no admin
+    # routes are reachable until this is explicitly set.
+    admin_usernames: tuple[str, ...] = tuple(
+        name.strip() for name in os.getenv("ADMIN_USERNAMES", "").split(",") if name.strip()
+    )
+
     max_message_length: int = 2000
     context_message_limit: int = 10
     context_char_cap: int = 6000

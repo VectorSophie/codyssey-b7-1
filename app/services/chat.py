@@ -91,6 +91,35 @@ def delete_session(db: Session, session_id: int, user: User) -> None:
     db.commit()
 
 
+def list_recent_message_logs(db: Session, limit: int = 50) -> list[dict]:
+    """Same rows and columns as scripts/check_logs.sql, for GET /api/admin/logs.
+
+    Excludes users.password_hash, same as the SQL script this mirrors.
+    """
+    rows = (
+        db.query(Message, ChatSession, User)
+        .join(ChatSession, Message.session_id == ChatSession.id)
+        .join(User, ChatSession.user_id == User.id)
+        .order_by(Message.created_at.desc(), Message.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "username": user.username,
+            "session_id": chat_session.id,
+            "title": chat_session.title,
+            "role": message.role,
+            "content": message.content,
+            "request_id": message.request_id,
+            "status": message.status,
+            "latency_ms": message.latency_ms,
+            "created_at": message.created_at,
+        }
+        for message, chat_session, user in rows
+    ]
+
+
 async def handle_chat(
     db: Session,
     user: User,

@@ -152,6 +152,49 @@ wasn't built speculatively without a concrete failure driving it. The
 per-user rate limit below is a different, coarser guard: it caps sustained
 abuse, not a single accidental double-submit.
 
+**Why is auth a `Depends()` dependency (`app/dependencies.py::require_auth`)
+instead of global ASGI middleware?** This is the FastAPI-idiomatic choice,
+not a missing piece. Middleware runs before route matching, so it can't
+tell a protected route from a public one without a hand-maintained path
+allowlist (exactly the kind of thing `/health`, `/api/auth/register`, and
+the SPA catch-all in `app/main.py` would need to be excluded from,
+manually, forever). A per-route dependency instead: (1) shows up in the
+auto-generated OpenAPI docs as that route's actual security requirement,
+(2) is what `app.dependency_overrides` hooks into for every test in this
+suite (`tests/conftest.py`), which a middleware can't participate in the
+same way, and (3) keeps "is this route protected" answerable by reading
+the route's own signature instead of cross-referencing a separate
+middleware file. Real teams have moved *from* middleware auth *to*
+per-route dependencies for these reasons, not the other direction — see
+["Enhancing Authentication in FastAPI: Transitioning from Middleware to
+Router-Level
+Dependencies"](https://medium.com/@anto18671/efficiency-of-using-dependencies-on-router-in-fastapi-c3b288ac408b).
+The one thing this project *does* use middleware for
+(`attach_chat_request_id` in `app/main.py`) is a genuine cross-cutting,
+route-agnostic concern (every request gets a correlation id) — which is
+exactly the case middleware is for.
+
+**Why no repository/CRUD layer per model, given `app/services/chat.py`
+queries `ChatSession`/`Message` directly with the SQLAlchemy `Session`?**
+The failure mode a repository layer prevents is DB-access code "sprinkled
+all over the codebase" so nothing can find or change it safely (this is
+the standard argument for it — see ["Repository and Unit of Work
+Pattern"](https://www.cosmicpython.com/blog/2017-09-08-repository-and-unit-of-work-pattern-in-python)
+and the SQLAlchemy Session being called out as too easy to query from
+anywhere). This project already prevents that a different way: exactly one
+module owns each table's writes and non-trivial reads --
+`app/services/chat.py` for `chat_sessions`/`messages`,
+`app/services/users.py` for `users` (see `find_conflicting_user`,
+`get_user_by_username`, `create_user`) — and every router (`auth.py`,
+`chat.py`) calls into those, never the DB directly. A `Repository` class
+per model here would be a same-named wrapper around functions that already
+live in exactly one place; for 3 tables and one process it adds a layer of
+indirection without adding a capability the project doesn't already have.
+The concrete trigger for actually adding one: swapping SQLite for
+something where the session's transaction boundary needs to be explicit
+and reusable across multiple call sites (a real Unit of Work), which this
+project's scale hasn't hit.
+
 **Why did `app/routers/chat.py` used to have DB queries directly in two
 routes (`list_chats`, `delete_chat`) while `post_chat`/`get_chat` went
 through `app/services/chat.py`?** It shouldn't have — that was a real
@@ -159,4 +202,31 @@ inconsistency, not an intentional layering choice, caught in review. Fixed
 by moving the query and the delete into `list_sessions()` /
 `delete_session()` in `app/services/chat.py`, so routers now only do HTTP
 wiring (parse the request, call one service function, shape the response)
-and every DB access lives in the service layer.
+and every DB access lives in the service layer. `app/routers/auth.py` had
+the same problem (`db.query(User)...` directly in `register`/`login`) --
+fixed the same way, into the new `app/services/users.py`.
+
+**Where's the admin-facing log view?** `GET /api/admin/logs`
+(`app/routers/admin.py`), gated by `require_admin`
+(`app/dependencies.py`) checking `ADMIN_USERNAMES`. Returns the same rows
+as `scripts/check_logs.sql` over HTTP instead of requiring direct SQLite
+file access. See "Admin log access" in `docs/API_CONTRACT.md` for why this
+is a config allowlist and not an `is_admin` database column.
+
+## Documentation-to-PR traceability
+
+Every non-trivial doc claim above should be checkable against the PR that
+introduced it, not just taken on faith:
+
+| Decision / doc section | PR |
+|---|---|
+| Initial backend, auth, chat API, OpenRouter integration | [#2](https://github.com/VectorSophie/codyssey-b7-1/pull/2) |
+| React/Vite frontend deviation (accepted) | [#6](https://github.com/VectorSophie/codyssey-b7-1/pull/6), [#7](https://github.com/VectorSophie/codyssey-b7-1/pull/7) |
+| QA test suite, evaluator/deployment docs | [#1](https://github.com/VectorSophie/codyssey-b7-1/pull/1), [#7](https://github.com/VectorSophie/codyssey-b7-1/pull/7) |
+| `openrouter/free` auto-router fix (non-chat model routing) | [#8](https://github.com/VectorSophie/codyssey-b7-1/pull/8), [#9](https://github.com/VectorSophie/codyssey-b7-1/pull/9) |
+| Router/service abstraction fix (chat), async/streaming/raise-vs-return Q&A | [#10](https://github.com/VectorSophie/codyssey-b7-1/pull/10) |
+| Per-user chat rate limit, CSRF/idempotency Q&A | [#10](https://github.com/VectorSophie/codyssey-b7-1/pull/10) |
+| `app/services/users.py` extraction, admin log route, auth-middleware/repository-pattern Q&A | [#10](https://github.com/VectorSophie/codyssey-b7-1/pull/10) |
+
+Update this table in the same PR that changes the architecture it
+describes -- an undated claim is worth less than the commit that backs it.
