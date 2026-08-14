@@ -1,10 +1,12 @@
 # Testing — EVERYTHING
 
-`pytest -q` from the repo root. Every test mocks the AI call and blocks
-external sockets (`tests/conftest.py::block_external_network`) — no test
-run ever spends real OpenRouter quota.
+## Backend (`pytest -q` from the repo root)
 
-## What each file owns
+Every test mocks the AI call and blocks external sockets
+(`tests/conftest.py::block_external_network`) — no test run ever spends
+real OpenRouter quota.
+
+### What each file owns
 
 | File | Verifies |
 |---|---|
@@ -17,7 +19,7 @@ run ever spends real OpenRouter quota.
 | `test_config.py` | production refuses to start with the default `SECRET_KEY` (subprocess, since import-time behavior can't be tested via a normal import) |
 | `test_spa.py` | `/api/*` 404s as JSON vs. non-API paths falling back to the SPA — skips if `frontend/dist` isn't built |
 
-## Deliberately not tested here
+### Deliberately not tested here
 
 - **Real OpenRouter calls.** Every AI interaction is mocked. Free-tier
   quota isn't a thing to spend on CI runs.
@@ -31,7 +33,7 @@ run ever spends real OpenRouter quota.
   in-process state makes the same assumption. Nothing here tests behavior
   under real concurrent load.
 
-## Removed: `tests/test_smoke.py`
+### Removed: `tests/test_smoke.py`
 
 Was Agent 1's own pre-QA-suite self-check (predated `test_auth.py` /
 `test_chat.py` / `test_ai.py` / `test_health.py`, kept afterward only to
@@ -55,3 +57,28 @@ suites overlap" question waiting to happen:
 
 The `registered_user` fixture in `tests/conftest.py` was only used by that
 file and was removed with it.
+
+## Frontend (`npm test` / `npx vitest run` from `frontend/`)
+
+35 tests across 9 files, reviewed for the same "is this redundant or
+unclear" question the backend suite got — nothing removed here, each file
+covers a distinct concern with no overlap found:
+
+| File | Verifies |
+|---|---|
+| `api/client.test.ts` | every API function sends the exact request contract (fields, `credentials: "include"`, method) and maps server/network errors to safe codes/messages without leaking raw server text |
+| `auth/AuthContext.test.tsx` | session-check vs. mutation errors stay distinct, a stale initial `/me` response can't overwrite a newer login, and login+register can't run concurrently |
+| `components/QuestionComposer.test.tsx` | Enter submits, Shift+Enter doesn't, submit is blocked while sending |
+| `components/ConversationView.test.tsx` | AI answer content is rendered as escaped text, not HTML (XSS) |
+| `pages/AuthPages.test.tsx` | navigating away during login/register doesn't let a late success redirect the user back |
+| `pages/ChatPage.test.tsx` | the request-version/mount-guard logic in `ChatPage.tsx`: stale session-switch responses, a late POST after unmount, a submitted question surviving a mid-flight auth expiry, no duplicate GETs on state transitions |
+| `lib/dateTime.test.ts` | server timestamps without a timezone offset are treated as UTC, not local time |
+| `lib/errorMessages.test.ts` | the exact required Korean error strings, and that unknown codes fall back to a generic message instead of leaking the code |
+| `lib/navigationState.test.ts` | pending-question length cap, and that a `next=` redirect query can't point off-site (open-redirect guard) |
+
+The `ChatPage.test.tsx` and `AuthContext.test.tsx` tests look elaborate
+for what they assert, but each one is pinned to a specific race the
+component's ref-guard code (`isMountedRef`, `*RequestVersionRef`,
+`chatSubmitLockRef`) exists to prevent — removing the "elaborate" setup
+would just mean the race stops being tested, not that the test is
+over-engineered.
