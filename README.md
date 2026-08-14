@@ -93,16 +93,22 @@ placeholder입니다.
 
 ## 아키텍처와 책임
 
-```text
-Browser
-  → FastAPI page/API routers
-      → signed-cookie authentication
-      → chat orchestration
-          → bounded context builder
-          → OpenRouter HTTP client (openrouter/free only)
-          → SQLAlchemy persistence
-              → SQLite
+```mermaid
+flowchart LR
+    B[Browser] --> A["auth router<br/>signed-cookie 인증"]
+    B --> C["chat router<br/>질문/목록/조회/삭제"]
+    B --> AD["admin router<br/>ADMIN_USERNAMES 필요"]
+    C --> CTX[bounded context builder]
+    C --> OR["OpenRouter HTTP client<br/>openrouter/free only"]
+    C --> P[SQLAlchemy persistence]
+    AD --> P
+    A --> P
+    P --> DB[(SQLite)]
 ```
+
+요청당 상세 흐름(성공/실패 분기 포함)은 `docs/ARCHITECTURE.md`의
+"POST /api/chat request sequence"와 "Auth: race-safe registration +
+timing-safe login" 시퀀스 다이어그램을 참고하세요.
 
 | 구성 요소 | 책임 |
 |---|---|
@@ -124,8 +130,34 @@ Browser
 
 ## 데이터베이스
 
-```text
-users 1 ── N chat_sessions 1 ── N messages
+```mermaid
+erDiagram
+    USERS ||--o{ CHAT_SESSIONS : owns
+    CHAT_SESSIONS ||--o{ MESSAGES : contains
+    USERS {
+        int id PK
+        string username UK
+        string email UK
+        string password_hash
+        datetime created_at
+    }
+    CHAT_SESSIONS {
+        int id PK
+        int user_id FK
+        string title
+        datetime created_at
+        datetime updated_at
+    }
+    MESSAGES {
+        int id PK
+        int session_id FK
+        string role
+        text content
+        string request_id
+        string status
+        int latency_ms
+        datetime created_at
+    }
 ```
 
 ### `users`
