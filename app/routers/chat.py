@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_auth
-from app.models.chat import ChatSession
 from app.models.user import User
 from app.schemas.chat import (
     ChatRequest,
@@ -12,7 +11,7 @@ from app.schemas.chat import (
     ChatSessionOut,
     MessageOut,
 )
-from app.services.chat import get_owned_session, handle_chat
+from app.services.chat import delete_session, get_owned_session, handle_chat, list_sessions
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -38,12 +37,7 @@ async def post_chat(
 
 @router.get("/chats", response_model=ChatSessionListResponse)
 def list_chats(user: User = Depends(require_auth), db: Session = Depends(get_db)):
-    sessions = (
-        db.query(ChatSession)
-        .filter(ChatSession.user_id == user.id)
-        .order_by(ChatSession.updated_at.desc())
-        .all()
-    )
+    sessions = list_sessions(db, user)
     return ChatSessionListResponse(
         sessions=[ChatSessionOut.model_validate(s) for s in sessions]
     )
@@ -60,7 +54,5 @@ def get_chat(session_id: int, user: User = Depends(require_auth), db: Session = 
 
 @router.delete("/chats/{session_id}")
 def delete_chat(session_id: int, user: User = Depends(require_auth), db: Session = Depends(get_db)):
-    session = get_owned_session(db, session_id, user)
-    db.delete(session)
-    db.commit()
+    delete_session(db, session_id, user)
     return {"success": True}

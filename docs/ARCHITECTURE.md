@@ -81,3 +81,61 @@ debugging a specific issue.
 Retrieval/grounding (e.g. Wikipedia API integration) is explicitly out of
 scope for the MVP. The context/service layering should not preclude adding
 it later, but no groundwork beyond that should be built speculatively now.
+
+## Design decisions (evaluator Q&A)
+
+Questions raised during review, answered here rather than only verbally,
+since undocumented reasoning reads as luck rather than intent.
+
+**Why is `handle_chat` `async` when only one line (`await
+call_openrouter(...)`) actually awaits anything?** That single await is the
+only I/O in the request that can take a meaningful amount of wall-clock
+time — up to `AI_TIMEOUT_SECONDS` (20s) waiting on OpenRouter. Everything
+else in the function is synchronous SQLite work, which is fast enough that
+making it async too would add complexity (an async DB driver, an async
+session lifecycle) without a measurable benefit at this project's scale —
+one FastAPI process, one SQLite file, low concurrency. The point of the
+`await` is that while it's waiting on the network, the event loop is free
+to run other requests; a fully synchronous handler could not do that. It's
+not "async because the language allows it everywhere" — it's async at
+exactly the one point where yielding control is worth something. This
+tradeoff is also called out as a known limit in
+`docs/DEPLOYMENT_CHECKLIST.md` (the sync session is still held open across
+that await); the fix if this ever needs to scale further is a fully async
+DB session, not sprinkling more `await` in.
+
+**Why no streaming?** Streaming is the SSE/WebSocket-shaped version of a
+much bigger scope: partial-response persistence, mid-stream failure
+handling, and a client that can resume or discard a half-received answer.
+The project's hard constraint is "exactly one OpenRouter call per
+question, at most one controlled retry" — getting *that* reliable already
+took real debugging work (see the `openrouter/free` auto-router incident
+in `app/services/ai.py` and PR #8/#9). Streaming would multiply the
+failure surface of an already fragile free-tier dependency for a UX gain
+that isn't part of the evaluated spec. It's a reasonable next step, not an
+oversight — the response shape (`session_id` + one `message`) doesn't
+preclude adding it later.
+
+**Why `raise AppError(...)` instead of returning an error value?**
+(`app/dependencies.py::require_auth`, `app/services/chat.py::get_owned_session`,
+and every validation check in `handle_chat`.) Domain errors here are
+translated to HTTP responses by one central handler
+(`app.errors.AppError` -> caught in `app/main.py`), not by the caller.
+Returning error values instead would mean every router function has to
+remember to check and translate them — easy to forget, and each miss is a
+silent 200 with a wrong body. Raising makes "this request cannot
+continue" impossible to accidentally ignore: it either gets deliberately
+caught, or it propagates to the one place that turns it into the correct
+status code and `error_code`. Return values are still used everywhere the
+result is genuinely optional data, not an error — e.g. `get_current_user`
+returns `User | None` because "not logged in" is a normal state a caller
+is expected to branch on, not a failure to short-circuit.
+
+**Why did `app/routers/chat.py` used to have DB queries directly in two
+routes (`list_chats`, `delete_chat`) while `post_chat`/`get_chat` went
+through `app/services/chat.py`?** It shouldn't have — that was a real
+inconsistency, not an intentional layering choice, caught in review. Fixed
+by moving the query and the delete into `list_sessions()` /
+`delete_session()` in `app/services/chat.py`, so routers now only do HTTP
+wiring (parse the request, call one service function, shape the response)
+and every DB access lives in the service layer.

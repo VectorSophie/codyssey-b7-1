@@ -379,6 +379,17 @@ main ← develop ← feature/core-backend-ai
 - 다른 담당 영역의 변경은 결함 증거와 최소 수정으로 제한합니다.
 - 의미 있는 기여 이력을 단순 미관을 위해 squash하지 않습니다.
 
+### 병합된 PR
+
+| # | 제목 | 담당 |
+|---|---|---|
+| [#2](https://github.com/VectorSophie/codyssey-b7-1/pull/2) | feat(backend): FastAPI + SQLite backend, auth, and OpenRouter chat | Agent 1 |
+| [#1](https://github.com/VectorSophie/codyssey-b7-1/pull/1) | test(qa): verify operations and evaluator readiness | Agent 3 |
+| [#6](https://github.com/VectorSophie/codyssey-b7-1/pull/6) | feat(frontend): Agent 2 Frontend / UX / Visual Design 구현 완료 | Agent 2 |
+| [#7](https://github.com/VectorSophie/codyssey-b7-1/pull/7) | release: backend, React frontend, QA suite, and Render deploy | 전체 |
+| [#8](https://github.com/VectorSophie/codyssey-b7-1/pull/8) | fix(ai): stop openrouter/free from routing to non-chat models | Agent 1 |
+| [#9](https://github.com/VectorSophie/codyssey-b7-1/pull/9) | release: fix openrouter/free routing to non-chat models + review hardening | 전체 |
+
 ## 민감정보 처리
 
 - `.env`, `.env.*`, `*.db`, 로그, 가상환경은 Git에서 제외됩니다.

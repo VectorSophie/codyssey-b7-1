@@ -40,6 +40,21 @@ def get_owned_session(db: Session, session_id: int, user: User) -> ChatSession:
     return session
 
 
+def list_sessions(db: Session, user: User) -> list[ChatSession]:
+    return (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == user.id)
+        .order_by(ChatSession.updated_at.desc())
+        .all()
+    )
+
+
+def delete_session(db: Session, session_id: int, user: User) -> None:
+    session = get_owned_session(db, session_id, user)
+    db.delete(session)
+    db.commit()
+
+
 async def handle_chat(
     db: Session,
     user: User,
