@@ -24,3 +24,5 @@ services:
         value: "true"
       - key: LOG_LEVEL
         value: INFO
+      - key: ADMIN_USERNAMES
+        value: ""
