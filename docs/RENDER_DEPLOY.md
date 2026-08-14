@@ -32,7 +32,15 @@ Click **Apply** — Render builds the Docker image (~1-2 min based on a
 local build/run test: `npm ci && npm run build` for the frontend, then
 `pip install` for the backend) and starts the service.
 
-## 4. Verify
+## 4. Optional: enable the admin log view
+
+`GET /api/admin/logs` is gated by `ADMIN_USERNAMES`, which `render.yaml`
+sets to an empty string by default (no admin routes reachable). To use it,
+set `ADMIN_USERNAMES` on the Render dashboard to your own username
+(comma-separated for more than one) and redeploy. See "Admin log access"
+in `docs/API_CONTRACT.md`.
+
+## 5. Verify
 
 - `GET /health` → `{"status":"ok"}`
 - `/` loads the real React app

@@ -3,6 +3,7 @@
 Persistence happens only after a successful AI call, so a failed AI call never
 leaves a half-answered session or orphaned message behind.
 """
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 import time
 import uuid
@@ -18,6 +19,7 @@ from app.errors import (
     EMPTY_INPUT,
     INPUT_TOO_LONG,
     NOT_FOUND,
+    TOO_MANY_REQUESTS,
     AppError,
 )
 from app.logging_utils import log_event
@@ -33,11 +35,89 @@ def _make_title(question: str) -> str:
     return title[:60]
 
 
+# Per-user chat cost guard: OpenRouter's own 429 (AI_RATE_LIMIT) only fires
+# once the whole app has already exhausted the shared free-tier quota -- it
+# protects OpenRouter, not the other users of this app. This catches a single
+# user hammering the endpoint before that happens. A window (not a flat
+# per-request cooldown) is deliberate: a real follow-up question seconds
+# after the last one is normal and must not be throttled.
+# ponytail: in-process dict, not shared across instances -- fine for this
+# project's single-process deployment (see docs/ARCHITECTURE.md); move to a
+# shared store only if the app is ever run with more than one worker.
+_RATE_LIMIT_WINDOW_SECONDS = 60.0
+_RATE_LIMIT_MAX_REQUESTS = 20
+_recent_requests: dict[int, deque[float]] = defaultdict(deque)
+
+
+def reset_rate_limit_state() -> None:
+    """Test-only hook: each test gets a fresh user id 1 in a fresh DB, so the
+    module-level window must not leak request counts across tests."""
+    _recent_requests.clear()
+
+
+def _enforce_rate_limit(user_id: int) -> None:
+    now = time.monotonic()
+    window = _recent_requests[user_id]
+    while window and now - window[0] > _RATE_LIMIT_WINDOW_SECONDS:
+        window.popleft()
+    if len(window) >= _RATE_LIMIT_MAX_REQUESTS:
+        raise AppError(
+            TOO_MANY_REQUESTS,
+            "too many questions in a short time, please wait a moment",
+            status_code=429,
+        )
+    window.append(now)
+
+
 def get_owned_session(db: Session, session_id: int, user: User) -> ChatSession:
     session = db.get(ChatSession, session_id)
     if session is None or session.user_id != user.id:
         raise AppError(NOT_FOUND, "conversation not found", status_code=404)
     return session
+
+
+def list_sessions(db: Session, user: User) -> list[ChatSession]:
+    return (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == user.id)
+        .order_by(ChatSession.updated_at.desc())
+        .all()
+    )
+
+
+def delete_session(db: Session, session_id: int, user: User) -> None:
+    session = get_owned_session(db, session_id, user)
+    db.delete(session)
+    db.commit()
+
+
+def list_recent_message_logs(db: Session, limit: int = 50) -> list[dict]:
+    """Same rows and columns as scripts/check_logs.sql, for GET /api/admin/logs.
+
+    Excludes users.password_hash, same as the SQL script this mirrors.
+    """
+    rows = (
+        db.query(Message, ChatSession, User)
+        .join(ChatSession, Message.session_id == ChatSession.id)
+        .join(User, ChatSession.user_id == User.id)
+        .order_by(Message.created_at.desc(), Message.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "username": user.username,
+            "session_id": chat_session.id,
+            "title": chat_session.title,
+            "role": message.role,
+            "content": message.content,
+            "request_id": message.request_id,
+            "status": message.status,
+            "latency_ms": message.latency_ms,
+            "created_at": message.created_at,
+        }
+        for message, chat_session, user in rows
+    ]
 
 
 async def handle_chat(
@@ -55,6 +135,7 @@ async def handle_chat(
         raise AppError(EMPTY_INPUT, "message must not be blank")
     if len(question) > settings.max_message_length:
         raise AppError(INPUT_TOO_LONG, f"message exceeds {settings.max_message_length} characters")
+    _enforce_rate_limit(user.id)
 
     session: ChatSession | None = None
     history: list[Message] = []

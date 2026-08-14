@@ -66,6 +66,7 @@ def test_username_with_disallowed_characters_is_rejected(client):
 
 def test_registration_race_translates_integrity_error_to_taken(client, monkeypatch):
     import app.routers.auth as auth_module
+    import app.services.users as users_module
     from app.database import get_db
     from app.main import app
     from app.models.user import User
@@ -79,8 +80,12 @@ def test_registration_race_translates_integrity_error_to_taken(client, monkeypat
     # "no conflict" once (like the real UNIQUE constraint check would if it
     # ran a moment before the concurrent insert landed), so this request
     # falls through to db.commit() and hits the real constraint instead.
+    # The pre-check (app.routers.auth) and the post-IntegrityError resolution
+    # (app.services.users.create_user) call the function from two different
+    # modules, so both bindings must be patched to the same fake for the call
+    # counter below to see both calls in order.
     call_count = {"n": 0}
-    real_find = auth_module._find_conflicting_user
+    real_find = users_module.find_conflicting_user
 
     def racy_find(db, username, email):
         call_count["n"] += 1
@@ -88,7 +93,8 @@ def test_registration_race_translates_integrity_error_to_taken(client, monkeypat
             return None
         return real_find(db, username, email)
 
-    monkeypatch.setattr(auth_module, "_find_conflicting_user", racy_find)
+    monkeypatch.setattr(users_module, "find_conflicting_user", racy_find)
+    monkeypatch.setattr(auth_module, "find_conflicting_user", racy_find)
 
     response = client.post(
         "/api/auth/register",

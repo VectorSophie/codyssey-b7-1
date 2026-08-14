@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, Response
-from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -9,6 +7,7 @@ from app.errors import AppError
 from app.models.user import User
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOut
 from app.services.auth import create_session_token, hash_password, verify_password
+from app.services.users import create_user, find_conflicting_user, get_user_by_username
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -28,35 +27,18 @@ def _set_session_cookie(response: Response, user_id: int) -> None:
     )
 
 
-def _find_conflicting_user(db: Session, username: str, email: str) -> User | None:
-    return db.query(User).filter(or_(User.username == username, User.email == email)).first()
-
-
 @router.post("/register", response_model=AuthResponse, status_code=201)
 def register(payload: RegisterRequest, response: Response, db: Session = Depends(get_db)):
-    existing = _find_conflicting_user(db, payload.username, payload.email)
+    existing = find_conflicting_user(db, payload.username, payload.email)
     if existing is not None:
         if existing.username == payload.username:
             raise AppError("USERNAME_TAKEN", "username is already taken")
         raise AppError("EMAIL_TAKEN", "email is already registered")
 
-    user = User(
-        username=payload.username,
-        email=payload.email,
-        password_hash=hash_password(payload.password),
-    )
-    db.add(user)
-    try:
-        db.commit()
-    except IntegrityError:
-        # Two concurrent registrations can both pass the check above and
-        # race to insert; the loser hits the UNIQUE constraint here instead.
-        db.rollback()
-        conflict = _find_conflicting_user(db, payload.username, payload.email)
-        if conflict is not None and conflict.username == payload.username:
-            raise AppError("USERNAME_TAKEN", "username is already taken") from None
-        raise AppError("EMAIL_TAKEN", "email is already registered") from None
-    db.refresh(user)
+    # Two concurrent registrations can both pass the check above and race to
+    # insert; create_user() translates the loser's UNIQUE-constraint hit into
+    # the same AppError this pre-check would have raised.
+    user = create_user(db, payload.username, payload.email, hash_password(payload.password))
 
     _set_session_cookie(response, user.id)
     return AuthResponse(user=UserOut.model_validate(user))
@@ -64,7 +46,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
 
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == payload.username).first()
+    user = get_user_by_username(db, payload.username)
     # Verify against a dummy hash on a miss so a nonexistent username still
     # pays the real PBKDF2 cost -- response timing shouldn't reveal whether
     # the account exists.
