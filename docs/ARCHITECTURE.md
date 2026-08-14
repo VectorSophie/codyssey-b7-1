@@ -131,6 +131,27 @@ result is genuinely optional data, not an error — e.g. `get_current_user`
 returns `User | None` because "not logged in" is a normal state a caller
 is expected to branch on, not a failure to short-circuit.
 
+**Why no CSRF token, given cookies are used for auth?** The session cookie
+is `SameSite=Lax` (`app/routers/auth.py::_set_session_cookie`), which
+browsers already withhold on cross-site POST/PUT/DELETE requests (it's only
+sent on top-level navigation, i.e. plain GET-by-link) -- that blocks the
+classic auto-submitting-form CSRF attack without a token. Combined with
+there being no CORS middleware (the SPA and API are same-origin, per
+`app/main.py`), a cross-site `fetch`/XHR can't attach the cookie either. A
+CSRF token would be redundant defense-in-depth here, not a missing control.
+
+**What stops a duplicate `POST /api/chat` (double-click, flaky network
+retry) from creating two AI calls and two messages for one question?**
+The frontend (`ChatPage.tsx`'s `chatSubmitLockRef` plus `isSending`)
+prevents this from the UI, but that's a client-side convenience, not a
+guarantee -- a raw duplicate HTTP request (curl, a retrying proxy) isn't
+stopped by it. There is no server-side idempotency key. This is a real,
+accepted gap for the MVP: true idempotency (client-generated request key,
+server dedupes by it) is the correct fix if this becomes a problem, but
+wasn't built speculatively without a concrete failure driving it. The
+per-user rate limit below is a different, coarser guard: it caps sustained
+abuse, not a single accidental double-submit.
+
 **Why did `app/routers/chat.py` used to have DB queries directly in two
 routes (`list_chats`, `delete_chat`) while `post_chat`/`get_chat` went
 through `app/services/chat.py`?** It shouldn't have — that was a real

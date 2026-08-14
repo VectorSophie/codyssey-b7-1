@@ -275,6 +275,7 @@ Content-Type: application/json
 | `USERNAME_TAKEN`, `EMAIL_TAKEN` | 가입 정보 중복 |
 | `INVALID_CREDENTIALS` | 로그인 실패 |
 | `NOT_FOUND` | 없거나 소유하지 않은 대화 |
+| `TOO_MANY_REQUESTS` | 사용자당 60초에 20회를 초과한 채팅 요청 |
 
 세부 응답 형태는 `docs/API_CONTRACT.md`를 참고합니다.
 

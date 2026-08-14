@@ -109,6 +109,8 @@ INVALID_CREDENTIALS 401  — login: unknown username or wrong password
 NOT_FOUND           404  — chat session doesn't exist or isn't owned by
                             the requesting user (both cases return the
                             same response so existence isn't leaked)
+TOO_MANY_REQUESTS   429  — more than 20 chat requests from one user within
+                            60 seconds (see "Per-user chat rate limit" below)
 ```
 
 ## Input constraints
@@ -123,6 +125,20 @@ The AI boundary fails closed unless `OPENROUTER_MODEL` is exactly
 `openrouter/free`. A missing API key or any other model value produces the
 controlled `AI_API_ERROR` path without opening a network connection. There is
 no retry loop and no paid fallback.
+
+## Per-user chat rate limit
+
+`AI_RATE_LIMIT` (429) only fires once OpenRouter's shared free-tier quota is
+already exhausted -- it protects OpenRouter, not the other users of this
+app. A separate application-level guard rejects a single user's 21st chat
+request within a rolling 60-second window with `TOO_MANY_REQUESTS` (429),
+before an OpenRouter call is made, so one careless or scripted client can't
+burn the shared quota for everyone else. The window (not a flat per-message
+cooldown) is deliberate: a real follow-up question seconds after the last
+one is normal and must not be throttled. Implemented as an in-process
+dict in `app/services/chat.py`; correct for this project's single-instance
+deployment (see `docs/ARCHITECTURE.md`), and would need a shared store
+(e.g. Redis) only if ever run with more than one worker process.
 
 ## Auth model
 
