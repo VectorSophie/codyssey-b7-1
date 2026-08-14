@@ -20,6 +20,7 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base, get_db
 from app import main as main_module
 from app.main import app
+from app.services import chat as chat_module
 
 
 _LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
@@ -62,6 +63,15 @@ def block_external_network(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
 
 
+@pytest.fixture(autouse=True)
+def reset_chat_rate_limit():
+    """Each test reuses user id 1 in a fresh DB; the rate limiter's window is
+    a module-level dict, so it must not carry counts over between tests."""
+    chat_module.reset_rate_limit_state()
+    yield
+    chat_module.reset_rate_limit_state()
+
+
 @pytest.fixture()
 def db_session():
     engine = create_engine(
@@ -92,13 +102,3 @@ def client(db_session, monkeypatch):
     monkeypatch.setattr(main_module, "init_db", lambda: None)
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
-
-
-@pytest.fixture()
-def registered_user(client):
-    client.post(
-        "/api/auth/register",
-        json={"username": "alice", "email": "alice@example.com", "password": "password123"},
-    )
-    client.post("/api/auth/logout")
-    return {"username": "alice", "password": "password123"}

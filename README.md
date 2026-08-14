@@ -27,6 +27,36 @@ OpenRouter 기반 대화 기능을 먼저 완성했으며, 외부 검색·근거
 → 답변 저장 → 후속 질문 → 과거 대화 재방문
 ```
 
+### 왜 이런 컨셉인가
+
+- **범용 챗봇을 그대로 쓰지 않은 이유**: ChatGPT 같은 범용 챗봇은 세션이
+  흩어지고 목적이 정해져 있지 않다. EVERYTHING은 "질문 하나 = 세션 하나,
+  제목은 그 질문에서 자동 생성"으로 범위를 좁혀, 나중에 "그때 그거 뭐였지"를
+  찾기 쉽게 만드는 데 집중한다. 대신 범용 챗봇이 하는 다른 일(코드 작성,
+  창작, 멀티모달 등)은 의도적으로 다루지 않는다.
+- **정적 백과사전(위키백과 등)을 그대로 쓰지 않은 이유**: 문서와 대상 사용자
+  절에 적었듯, 정적 백과사전은 모든 사용자에게 같은 난이도의 글을 보여주고
+  후속 질문을 이어갈 방법이 없다. 대화형으로 만들어 "방금 답변을 기준으로 더
+  쉽게" 또는 "이거랑 관련해서 이건 어때"를 그대로 이어 물을 수 있게 했다.
+- **검색·근거 제시(grounding) 없이 시작한 이유**: grounding은 사실성을
+  올리지만, 그 전에 "대화 흐름 + 무료 티어 비용 안전 장치"가 먼저 검증되어야
+  의미가 있다고 판단해 MVP 범위에서 뺐다 (`docs/ARCHITECTURE.md`의 "Future
+  Extensibility" 참고). 없는 척하지 않고 README에도 명시했다.
+- **무료 티어만 쓰기로 한 이유**: 학습/평가 목적 프로젝트에서 실제 과금이
+  발생하면 지속 가능하지 않다. 그래서 "OpenRouter 무료 모델만, 유료 fallback
+  없음, 질문당 호출 정확히 1회"를 처음부터 하드 제약으로 설계에 넣었다 (아래
+  "OpenRouter와 비용 안전" 참고). 이건 기능 제한이 아니라 이 프로젝트가 실제로
+  운영 가능한 상태를 유지하기 위한 전제 조건이다.
+
+실제로 다른 점을 정리하면:
+
+| | 범용 챗봇 | 정적 백과사전 | EVERYTHING |
+|---|---|---|---|
+| 대화 이어가기 | 됨 (세션 관리가 느슨함) | 안 됨 | 됨, 세션 단위로 명확히 구분 |
+| 과거 기록 재방문 | 서비스마다 다름 | 해당 없음 | 질문 목록 → 상세 대화로 항상 재방문 가능 |
+| 난이도 맞춤 후속 설명 | 가능하지만 목적이 아님 | 안 됨 | 핵심 기능 |
+| 비용 안전 장치 | 서비스 제공자 책임 | 해당 없음 | 무료 티어 강제, 유료 전환 코드 자체가 없음 |
+
 > **프론트엔드 스택 변경 (검토 후 승인됨):** 초기 계획은 Jinja2 서버 렌더링
 > 템플릿 + vanilla JavaScript였고 Node 빌드 파이프라인은 배제했습니다.
 > Agent 2는 실제로 `frontend/` 아래 React 19 + Vite + TypeScript SPA를
@@ -63,25 +93,33 @@ placeholder입니다.
 
 ## 아키텍처와 책임
 
-```text
-Browser
-  → FastAPI page/API routers
-      → signed-cookie authentication
-      → chat orchestration
-          → bounded context builder
-          → OpenRouter HTTP client (openrouter/free only)
-          → SQLAlchemy persistence
-              → SQLite
+```mermaid
+flowchart LR
+    B[Browser] --> A["auth router<br/>signed-cookie 인증"]
+    B --> C["chat router<br/>질문/목록/조회/삭제"]
+    B --> AD["admin router<br/>ADMIN_USERNAMES 필요"]
+    C --> CTX[bounded context builder]
+    C --> OR["OpenRouter HTTP client<br/>openrouter/free only"]
+    C --> P[SQLAlchemy persistence]
+    AD --> P
+    A --> P
+    P --> DB[(SQLite)]
 ```
+
+요청당 상세 흐름(성공/실패 분기 포함)은 `docs/ARCHITECTURE.md`의
+"POST /api/chat request sequence"와 "Auth: race-safe registration +
+timing-safe login" 시퀀스 다이어그램을 참고하세요.
 
 | 구성 요소 | 책임 |
 |---|---|
 | `app/main.py` | 애플리케이션, 예외 처리, `/health`, 채팅 request ID |
 | `app/routers/auth.py` | 회원가입, 로그인, 로그아웃, 현재 사용자 |
 | `app/routers/chat.py` | 질문, 목록, 상세 조회, 삭제 API |
+| `app/routers/admin.py` | 관리자 로그 조회 API (`ADMIN_USERNAMES` 필요) |
 | `app/services/ai.py` | OpenRouter 무료 모델 HTTP 경계 |
 | `app/services/context.py` | 최근 대화 문맥 구성 및 크기 제한 |
-| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그 |
+| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그, 관리자 로그 조회 |
+| `app/services/users.py` | `users` 테이블에 직접 접근하는 유일한 모듈 |
 | `app/models/` | 사용자, 대화 세션, 메시지 모델 |
 | `app/templates/`, `app/static/` | 서버 렌더링 UI와 브라우저 동작 |
 | `tests/` | 외부 네트워크 없는 자동 검증 |
@@ -92,8 +130,34 @@ Browser
 
 ## 데이터베이스
 
-```text
-users 1 ── N chat_sessions 1 ── N messages
+```mermaid
+erDiagram
+    USERS ||--o{ CHAT_SESSIONS : owns
+    CHAT_SESSIONS ||--o{ MESSAGES : contains
+    USERS {
+        int id PK
+        string username UK
+        string email UK
+        string password_hash
+        datetime created_at
+    }
+    CHAT_SESSIONS {
+        int id PK
+        int user_id FK
+        string title
+        datetime created_at
+        datetime updated_at
+    }
+    MESSAGES {
+        int id PK
+        int session_id FK
+        string role
+        text content
+        string request_id
+        string status
+        int latency_ms
+        datetime created_at
+    }
 ```
 
 ### `users`
@@ -200,6 +264,7 @@ uvicorn app.main:app --reload
 | `GET` | `/api/chats` | 예 | 내 대화 목록 |
 | `GET` | `/api/chats/{session_id}` | 예 | 내 대화와 메시지 조회 |
 | `DELETE` | `/api/chats/{session_id}` | 예 | 내 대화 삭제 |
+| `GET` | `/api/admin/logs` | 예 (admin) | 최근 메시지 로그 (`scripts/check_logs.sql`과 동일 데이터) |
 | `GET` | `/health` | 아니요 | AI를 호출하지 않는 상태 확인 |
 
 ### 인증 예시
@@ -275,6 +340,8 @@ Content-Type: application/json
 | `USERNAME_TAKEN`, `EMAIL_TAKEN` | 가입 정보 중복 |
 | `INVALID_CREDENTIALS` | 로그인 실패 |
 | `NOT_FOUND` | 없거나 소유하지 않은 대화 |
+| `TOO_MANY_REQUESTS` | 사용자당 60초에 20회를 초과한 채팅 요청 |
+| `ADMIN_REQUIRED` | `ADMIN_USERNAMES`에 없는 사용자의 관리자 API 접근 |
 
 세부 응답 형태는 `docs/API_CONTRACT.md`를 참고합니다.
 
@@ -295,7 +362,12 @@ pytest -q
 - DB 저장 실패와 내부 예외 비노출
 - 필수 로그 이벤트와 비밀정보 필터
 - `/health` 공개 접근과 AI 호출 0회
+- 관리자 로그 라우트 인증/인가
+- 사용자당 rate limit
 - 테스트 전체의 외부 네트워크 차단
+
+파일별로 무엇을 검증하는지, 의도적으로 무엇을 테스트하지 않는지는
+`docs/TESTING.md`에 정리돼 있습니다.
 
 특정 장애 시연은 다음처럼 실제 API 없이 실행할 수 있습니다.
 
@@ -378,6 +450,17 @@ main ← develop ← feature/core-backend-ai
 - PR 대상은 `develop`입니다.
 - 다른 담당 영역의 변경은 결함 증거와 최소 수정으로 제한합니다.
 - 의미 있는 기여 이력을 단순 미관을 위해 squash하지 않습니다.
+
+### 병합된 PR
+
+| # | 제목 | 담당 |
+|---|---|---|
+| [#2](https://github.com/VectorSophie/codyssey-b7-1/pull/2) | feat(backend): FastAPI + SQLite backend, auth, and OpenRouter chat | Agent 1 |
+| [#1](https://github.com/VectorSophie/codyssey-b7-1/pull/1) | test(qa): verify operations and evaluator readiness | Agent 3 |
+| [#6](https://github.com/VectorSophie/codyssey-b7-1/pull/6) | feat(frontend): Agent 2 Frontend / UX / Visual Design 구현 완료 | Agent 2 |
+| [#7](https://github.com/VectorSophie/codyssey-b7-1/pull/7) | release: backend, React frontend, QA suite, and Render deploy | 전체 |
+| [#8](https://github.com/VectorSophie/codyssey-b7-1/pull/8) | fix(ai): stop openrouter/free from routing to non-chat models | Agent 1 |
+| [#9](https://github.com/VectorSophie/codyssey-b7-1/pull/9) | release: fix openrouter/free routing to non-chat models + review hardening | 전체 |
 
 ## 민감정보 처리
 

@@ -118,6 +118,20 @@ def test_conversation_list_is_user_specific_and_delete_enforces_ownership(
     assert client.get("/api/chats").json()["sessions"] == []
 
 
+def test_rapid_fire_questions_beyond_the_window_are_throttled(client, monkeypatch):
+    register(client)
+    monkeypatch.setattr(chat_module, "call_openrouter", AsyncMock(return_value="answer"))
+
+    responses = [
+        client.post("/api/chat", json={"session_id": None, "message": f"question {i}"})
+        for i in range(chat_module._RATE_LIMIT_MAX_REQUESTS + 1)
+    ]
+
+    assert [r.status_code for r in responses[:-1]] == [200] * chat_module._RATE_LIMIT_MAX_REQUESTS
+    assert responses[-1].status_code == 429
+    assert responses[-1].json()["error_code"] == "TOO_MANY_REQUESTS"
+
+
 def test_followup_moves_existing_conversation_to_top_of_recent_list(client, monkeypatch):
     register(client)
     monkeypatch.setattr(chat_module, "call_openrouter", AsyncMock(return_value="answer"))
