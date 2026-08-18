@@ -19,6 +19,8 @@ class UserOut(BaseModel):
     username: str
     email: str
     created_at: datetime
+    # 화면이 관리자 메뉴를 표시할 때만 사용할 서버 판정값이다.
+    is_admin: bool
 
     model_config = {"from_attributes": True}
 

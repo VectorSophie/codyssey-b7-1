@@ -2,6 +2,7 @@ from dataclasses import replace
 from unittest.mock import AsyncMock
 
 from app.config import settings
+from app.routers import auth as auth_router_module
 from app.models.chat import ChatSession
 from app.models.message import Message
 from app.models.user import User
@@ -170,3 +171,28 @@ def test_admin_database_returns_all_safe_rows(client, db_session, monkeypatch):
     assert logs_response.status_code == 200
     # 과거의 50개 제한 없이 전체 로그가 제공돼야 한다.
     assert len(logs_response.json()["logs"]) == 55
+
+
+# 인증 응답이 관리자 목록 원문 대신 현재 사용자의 판정값만 주는지 확인한다.
+def test_auth_response_marks_configured_admin(client, monkeypatch):
+    # alice가 관리자라고 두 모듈이 같은 테스트 설정을 사용하게 한다.
+    admin_settings = replace(settings, admin_usernames=("alice",))
+    # 실제 API 권한 검사가 읽는 설정을 바꾼다.
+    monkeypatch.setattr("app.dependencies.settings", admin_settings)
+    # 인증 응답의 is_admin 계산이 읽는 설정도 바꾼다.
+    monkeypatch.setattr(auth_router_module, "settings", admin_settings)
+
+    # 관리자 목록에 포함된 alice 계정을 만든다.
+    response = client.post(
+        # 회원가입과 동시에 공개 사용자 응답을 받는다.
+        "/api/auth/register",
+        # 테스트 전용 관리자 계정 정보를 전송한다.
+        json={"username": "alice", "email": "alice@example.com", "password": "password123"},
+    )
+
+    # 회원가입이 정상 처리됐는지 확인한다.
+    assert response.status_code == 201
+    # 프론트 메뉴 표시용 관리자 판정이 참이어야 한다.
+    assert response.json()["user"]["is_admin"] is True
+    # 관리자 이름 전체 목록은 응답 어디에도 없어야 한다.
+    assert "admin_usernames" not in response.text
