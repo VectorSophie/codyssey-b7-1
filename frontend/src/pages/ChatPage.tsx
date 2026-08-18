@@ -80,8 +80,10 @@ export function ChatPage() {
     const [conversationError, setConversationError] = useState("");
     // 첫 렌더에서만 이전 화면의 질문 초안을 입력값으로 사용한다.
     const location = useLocation();
+    // 로그인 전에 전달된 최초 질문을 이후 Router state 제거와 관계없이 보관한다.
+    const initialPendingQuestionRef = useRef(readPendingQuestion(location.state));
     // 사용자가 아직 보내지 않은 질문 초안을 보관한다.
-    const [draft, setDraft] = useState(() => readPendingQuestion(location.state));
+    const [draft, setDraft] = useState(initialPendingQuestionRef.current);
     // AI 답변 요청이 진행 중인지 보관한다.
     const [isSending, setIsSending] = useState(false);
     // 질문 검증 또는 AI 요청 실패 문장을 보관한다.
@@ -112,6 +114,8 @@ export function ChatPage() {
     const conversationRequestVersionRef = useRef(0);
     // 같은 렌더 안의 빠른 중복 제출까지 즉시 막는 잠금 참조다.
     const chatSubmitLockRef = useRef(false);
+    // 개발 환경의 Effect 재실행에서도 최초 질문을 한 번만 자동 전송하게 기록한다.
+    const hasAutoSubmittedPendingQuestionRef = useRef(false);
     // 전송 중 입력칸에서 지운 질문을 인증 만료 이동까지 안전하게 보존한다.
     const inFlightQuestionRef = useRef("");
     // 화면을 떠난 뒤 늦은 응답이 URL이나 상태를 바꾸지 못하게 생존 여부를 보관한다.
@@ -812,6 +816,23 @@ export function ChatPage() {
             }
         }
     }
+
+    // 로그인 전에 작성한 질문이 있으면 채팅 화면 진입 직후 자동으로 전송한다.
+    useEffect(() => {
+        // Router state로 전달된 최초 질문을 읽는다.
+        const pendingQuestion = initialPendingQuestionRef.current;
+
+        // 전달된 질문이 없거나 이미 자동 전송을 시작했다면 아무 작업도 하지 않는다.
+        if (pendingQuestion.length === 0 || hasAutoSubmittedPendingQuestionRef.current) {
+            // 수동 입력 화면과 React StrictMode의 두 번째 Effect 실행을 그대로 종료한다.
+            return;
+        }
+
+        // 비동기 호출 전에 먼저 기록해 같은 질문의 중복 전송을 막는다.
+        hasAutoSubmittedPendingQuestionRef.current = true;
+        // 기존 검증, 오류 복구, URL 동기화가 포함된 전송 함수를 그대로 실행한다.
+        void submitQuestion();
+    }, []);
 
     // 사용자가 기록의 삭제 버튼을 누르면 확인 대상을 연다.
     function requestDelete(session: ChatSession): void {

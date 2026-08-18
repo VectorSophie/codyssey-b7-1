@@ -100,7 +100,10 @@ function LocationProbe() {
 }
 
 // 실제 앱 경로 구조와 비슷하게 채팅과 랜딩을 함께 렌더링한다.
-function renderChat(initialEntry: string = "/chat"): void {
+function renderChat(
+    // 문자열 URL 또는 질문 이동 state가 포함된 채팅 주소를 받는다.
+    initialEntry: string | { pathname: string; state: { pendingQuestion: string } } = "/chat",
+): void {
     // 원하는 첫 URL로 메모리 Router를 시작한다.
     render(
         <MemoryRouter initialEntries={[initialEntry]} useTransitions={false}>
@@ -190,6 +193,44 @@ describe("ChatPage", () => {
                 dispatchEvent: vi.fn().mockReturnValue(false),
             })),
         );
+    });
+
+    // 로그인 전에 작성한 질문이 채팅 진입 직후 별도 클릭 없이 전송되는지 확인한다.
+    it("automatically sends the pending question once after login", async () => {
+        // 자동 전송 요청에 서버가 새 대화 번호와 답변을 반환하게 한다.
+        vi.mocked(sendChatMessage).mockResolvedValueOnce({
+            // 서버가 자동 질문으로 만든 새 대화 번호다.
+            sessionId: 42,
+            // 화면에 표시할 AI 답변 객체다.
+            message: {
+                // 테스트 답변의 고유 번호다.
+                id: 422,
+                // AI가 작성한 메시지임을 표시한다.
+                role: "assistant",
+                // 자동 전송 성공을 확인할 답변 내용이다.
+                content: "자동 전송 답변",
+                // 화면이 날짜를 표시할 때 사용할 생성 시각이다.
+                createdAt: "2026-08-19T10:00:00Z",
+            },
+        });
+
+        // 로그인 성공 이동처럼 질문을 URL이 아닌 Router state에 담아 채팅을 연다.
+        renderChat({
+            // 보호된 채팅 화면 주소다.
+            pathname: "/chat",
+            // 로그인 전에 작성한 질문을 이동 state로 전달한다.
+            state: { pendingQuestion: "로그인 전에 작성한 질문" },
+        });
+
+        // 사용자가 보내기 버튼을 누르지 않아도 채팅 API가 호출될 때까지 기다린다.
+        await waitFor(() => {
+            // 새 대화이므로 session id 없이 최초 질문을 정확히 전송해야 한다.
+            expect(sendChatMessage).toHaveBeenCalledWith(null, "로그인 전에 작성한 질문");
+        });
+        // React StrictMode와 Router state 제거가 같은 질문을 중복 전송하지 않아야 한다.
+        expect(sendChatMessage).toHaveBeenCalledTimes(1);
+        // 사용이 끝난 질문은 브라우저 이동 state에 남지 않아야 한다.
+        expect(screen.getByTestId("pending-question")).toHaveTextContent("");
     });
 
     // 첫 질문 성공 결과가 새 URL 전환 뒤에도 같은 화면에 남는지 확인한다.
