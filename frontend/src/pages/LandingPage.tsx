@@ -115,11 +115,18 @@ export function LandingPage() {
                     ) : null}
                     {/* 로그인 사용자는 자신의 이름과 채팅 링크를 본다. */}
                     {status === "authenticated" ? (
-                        // 채팅으로 이동하는 간결한 텍스트 링크다.
-                        <Link className="nav-link" to="/chat">
-                            {/* 현재 계정임을 알 수 있게 사용자 이름을 포함한다. */}
-                            {user?.username}의 대화
-                        </Link>
+                        // 관리자 링크와 일반 채팅 링크를 함께 묶는다.
+                        <div className="auth-links">
+                            {/* 서버가 관리자라고 판정한 사용자에게만 운영 메뉴를 표시한다. */}
+                            {user?.isAdmin ? (
+                                <Link className="nav-link" to="/admin">관리자</Link>
+                            ) : null}
+                            {/* 채팅으로 이동하는 간결한 텍스트 링크다. */}
+                            <Link className="nav-link" to="/chat">
+                                {/* 현재 계정임을 알 수 있게 사용자 이름을 포함한다. */}
+                                {user?.username}의 대화
+                            </Link>
+                        </div>
                     ) : null}
                     {/* 비로그인 사용자는 로그인과 회원가입 링크를 본다. */}
                     {status === "unauthenticated" ? (

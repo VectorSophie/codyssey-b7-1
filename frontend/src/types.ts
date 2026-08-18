@@ -8,6 +8,64 @@ export interface User {
     email: string;
     // 계정이 생성된 시각을 ISO 문자열로 보관한다.
     createdAt: string;
+    // 서버가 ADMIN_USERNAMES를 기준으로 판정한 관리자 메뉴 표시값이다.
+    isAdmin: boolean;
+}
+
+// 관리자 화면에서 users 테이블 한 행을 표현한다.
+export interface AdminUser {
+    // 사용자 DB 기본키다.
+    id: number;
+    // 로그인과 화면 표시에 사용하는 사용자 이름이다.
+    username: string;
+    // 회원가입 때 등록한 이메일 주소다.
+    email: string;
+    // 계정이 생성된 시각이다.
+    createdAt: string;
+}
+
+// 관리자 화면에서 chat_sessions 테이블 한 행을 표현한다.
+export interface AdminSession {
+    // 대화방 DB 기본키다.
+    id: number;
+    // 대화방 소유자의 사용자 기본키다.
+    userId: number;
+    // 첫 질문에서 만든 대화 제목이다.
+    title: string;
+    // 대화방이 생성된 시각이다.
+    createdAt: string;
+    // 대화방이 마지막으로 갱신된 시각이다.
+    updatedAt: string;
+}
+
+// 관리자 화면에서 messages 테이블 한 행을 표현한다.
+export interface AdminMessage {
+    // 메시지 DB 기본키다.
+    id: number;
+    // 메시지가 속한 대화방 기본키다.
+    sessionId: number;
+    // 메시지 작성 주체다.
+    role: "user" | "assistant";
+    // 질문 또는 AI 답변 원문이다.
+    content: string;
+    // 서버 운영 로그와 연결할 요청 번호다.
+    requestId: string;
+    // 메시지 저장 상태다.
+    status: string;
+    // AI 답변 지연 시간이며 사용자 질문은 null일 수 있다.
+    latencyMs: number | null;
+    // 메시지가 생성된 시각이다.
+    createdAt: string;
+}
+
+// 관리자 화면이 한 요청으로 받을 세 SQLite 테이블을 표현한다.
+export interface AdminDatabase {
+    // password_hash가 제외된 users 전체 행이다.
+    users: AdminUser[];
+    // chat_sessions 전체 행이다.
+    sessions: AdminSession[];
+    // messages 전체 행이다.
+    messages: AdminMessage[];
 }
 
 // 왼쪽 기록 목록에 표시할 대화 한 건을 표현한다.
