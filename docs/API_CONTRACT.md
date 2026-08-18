@@ -19,6 +19,7 @@ GET    /api/chats/{session_id}
 DELETE /api/chats/{session_id}
 
 GET    /api/admin/logs
+GET    /api/admin/database
 
 GET    /health
 ```
@@ -144,12 +145,18 @@ dict in `app/services/chat.py`; correct for this project's single-instance
 deployment (see `docs/ARCHITECTURE.md`), and would need a shared store
 (e.g. Redis) only if ever run with more than one worker process.
 
-## Admin log access
+## Admin database access
 
-`GET /api/admin/logs` is a web-facing equivalent of
-`scripts/check_logs.sql` -- same rows (the most recent 50 messages, joined
-with their session and user), same exclusion of `users.password_hash`, same
-person who'd run it (whoever operates the deployment). Gated by
+`GET /api/admin/logs` returns every message joined with its session and user.
+`GET /api/admin/database` returns every row from `users`, `chat_sessions`, and
+`messages`, preserving primary and foreign keys so the `/admin` page can show
+the relationships directly. Both responses deliberately exclude
+`users.password_hash`: a password hash is an authentication secret, not
+administrator-facing personal information. Both routes also send
+`Cache-Control: no-store, private` and `Pragma: no-cache` so browsers and
+intermediate caches do not retain the private response.
+
+Both routes are gated by
 `require_admin` (`app/dependencies.py`), which checks the requesting
 user's username against `ADMIN_USERNAMES`. No `is_admin` database column:
 this project has no migration tooling (`Base.metadata.create_all()` only
@@ -158,6 +165,11 @@ wouldn't retroactively apply to an already-deployed database without a
 manual `ALTER TABLE`. A config-driven allowlist works immediately and needs
 no schema change; it doesn't scale past "a small, fixed set of trusted
 operators," which is what this project actually has.
+
+Authentication responses include `user.is_admin` so the frontend can show the
+administrator navigation only when useful. That value is only a display hint;
+the server does not trust it and repeats the `require_admin` check for every
+administrator API request.
 
 ## Auth model
 
