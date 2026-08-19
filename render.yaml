@@ -25,4 +25,4 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: ADMIN_USERNAMES
-        value: ""
+        sync: false
