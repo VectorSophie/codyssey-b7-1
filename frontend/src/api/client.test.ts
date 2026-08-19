@@ -6,6 +6,8 @@ import {
     deleteChatSession,
     // 선택한 대화 조회 함수를 불러온다.
     getChatSession,
+    // 관리자 전체 DB 조회 함수를 불러온다.
+    getAdminDatabase,
     // 대화 기록 목록 조회 함수를 불러온다.
     getChatSessions,
     // 현재 로그인 사용자 조회 함수를 불러온다.
@@ -44,6 +46,8 @@ describe("API client", () => {
                 email: "reader@example.com",
                 // 테스트 계정 생성 시각이다.
                 created_at: "2026-08-08T10:00:00",
+                // 일반 사용자이므로 관리자 메뉴를 표시하지 않는다.
+                is_admin: false,
             },
         };
         // 실제 네트워크 대신 준비한 JSON 응답을 반환하는 mock을 만든다.
@@ -119,6 +123,8 @@ describe("API client", () => {
                 email: "new-reader@example.com",
                 // 테스트 계정 생성 시각이다.
                 created_at: "2026-08-08T11:00:00",
+                // 일반 사용자이므로 관리자 메뉴를 표시하지 않는다.
+                is_admin: false,
             },
         };
         // 실제 네트워크 대신 회원가입 성공 응답을 반환한다.
@@ -182,6 +188,8 @@ describe("API client", () => {
                             email: "session-reader@example.com",
                             // 테스트 계정 생성 시각이다.
                             created_at: "2026-08-08T12:00:00",
+                            // 관리자 계정 판정값을 함께 제공한다.
+                            is_admin: true,
                         },
                     }),
                     {
@@ -211,6 +219,8 @@ describe("API client", () => {
 
         // 현재 사용자가 올바르게 변환됐는지 확인한다.
         expect(user.username).toBe("session-reader");
+        // 서버 관리자 판정이 화면 타입에 반영됐는지 확인한다.
+        expect(user.isAdmin).toBe(true);
         // 조회와 로그아웃이 각각 한 번씩 실행됐는지 확인한다.
         expect(fetchMock).toHaveBeenCalledTimes(2);
         // 첫 번째 요청이 현재 사용자 endpoint인지 확인한다.
@@ -440,6 +450,89 @@ describe("API client", () => {
             // 원시 영어 문장 대신 정해진 한국어 안내다.
             message: "로그인이 필요한 기능입니다.",
         });
+    });
+
+    // 관리자 DB 응답의 세 테이블을 화면 타입으로 안전하게 변환하는지 확인한다.
+    it("normalizes the complete admin database response", async () => {
+        // Backend 관리자 database API와 같은 응답을 준비한다.
+        const responseBody = {
+            // API 요청 성공 여부다.
+            success: true,
+            // password_hash가 없는 users 테이블 행이다.
+            users: [
+                {
+                    // 사용자 DB 기본키다.
+                    id: 1,
+                    // 사용자 이름이다.
+                    username: "admin-reader",
+                    // 사용자 이메일이다.
+                    email: "admin@example.com",
+                    // 계정 생성 시각이다.
+                    created_at: "2026-08-19T01:00:00Z",
+                },
+            ],
+            // chat_sessions 테이블 행이다.
+            sessions: [
+                {
+                    // 대화방 DB 기본키다.
+                    id: 10,
+                    // 소유 사용자 기본키다.
+                    user_id: 1,
+                    // 대화 제목이다.
+                    title: "관리자 테스트",
+                    // 대화 생성 시각이다.
+                    created_at: "2026-08-19T01:01:00Z",
+                    // 대화 갱신 시각이다.
+                    updated_at: "2026-08-19T01:02:00Z",
+                },
+            ],
+            // messages 테이블 행이다.
+            messages: [
+                {
+                    // 메시지 DB 기본키다.
+                    id: 100,
+                    // 소속 대화방 기본키다.
+                    session_id: 10,
+                    // 사용자 질문 역할이다.
+                    role: "user",
+                    // 질문 원문이다.
+                    content: "전체 데이터를 보여줘",
+                    // 운영 로그 요청 번호다.
+                    request_id: "request-admin-1",
+                    // 메시지 저장 상태다.
+                    status: "ok",
+                    // 사용자 질문에는 AI 지연 시간이 없다.
+                    latency_ms: null,
+                    // 메시지 생성 시각이다.
+                    created_at: "2026-08-19T01:01:30Z",
+                },
+            ],
+        };
+        // 실제 네트워크 대신 준비한 관리자 JSON을 반환한다.
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(JSON.stringify(responseBody), {
+                // 정상 조회 상태 코드다.
+                status: 200,
+                // JSON 응답임을 알린다.
+                headers: { "Content-Type": "application/json" },
+            }),
+        );
+        // 현재 테스트 동안만 fetch를 관리자 응답 mock으로 바꾼다.
+        vi.stubGlobal("fetch", fetchMock);
+
+        // 관리자 전체 DB 조회 함수를 실행한다.
+        const database = await getAdminDatabase();
+
+        // 사용자 계정 생성 시각이 camelCase로 변환됐는지 확인한다.
+        expect(database.users[0]?.createdAt).toBe("2026-08-19T01:00:00Z");
+        // 대화방 소유자 기본키가 camelCase로 변환됐는지 확인한다.
+        expect(database.sessions[0]?.userId).toBe(1);
+        // null 지연 시간이 값 손실 없이 유지되는지 확인한다.
+        expect(database.messages[0]?.latencyMs).toBeNull();
+        // 관리자 전용 endpoint를 정확히 호출했는지 확인한다.
+        expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/admin/database");
+        // 세션 쿠키가 포함되도록 요청했는지 확인한다.
+        expect((fetchMock.mock.calls[0]?.[1] as RequestInit).credentials).toBe("include");
     });
 
     // 네트워크 실패와 잘못된 성공 응답을 서로 다른 안전한 오류로 처리하는지 확인한다.

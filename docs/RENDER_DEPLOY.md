@@ -19,12 +19,23 @@ repo. Render reads `render.yaml` automatically and creates the service.
 Pick the branch to deploy: `main` if the `develop`→`main` release PR is
 already merged, or `develop` directly if you want it live before that.
 
-## 2. Provide the one secret Render can't infer
+## 2. Provide the values Render can't infer
 
-`render.yaml` marks `OPENROUTER_API_KEY` as `sync: false`, so Render
-prompts for it during Blueprint setup — paste your real key there. Every
-other env var (`SECRET_KEY`, `OPENROUTER_MODEL`, etc.) is already set in
-`render.yaml`.
+`render.yaml` marks `OPENROUTER_API_KEY` and `ADMIN_USERNAMES` as
+`sync: false`, so Render prompts for both during Blueprint setup. Paste
+your real OpenRouter key for the first. For `ADMIN_USERNAMES`, pick the
+exact username you (the operator) will register on the live site — see
+step 4. Every other env var (`SECRET_KEY`, `OPENROUTER_MODEL`, etc.) is
+already set in `render.yaml`.
+
+**Why `ADMIN_USERNAMES` isn't a literal value in `render.yaml`:** this
+repo is public. Registration is self-service — anyone can `POST
+/api/auth/register` with any unclaimed username. If the admin username
+were committed to `render.yaml` in plain text, anyone reading the repo
+could see it and race to register that exact username before the real
+operator does, instantly getting admin access. Keeping it `sync: false`
+means the value only ever exists in the Render dashboard, never in git
+history.
 
 ## 3. Deploy
 
@@ -32,13 +43,25 @@ Click **Apply** — Render builds the Docker image (~1-2 min based on a
 local build/run test: `npm ci && npm run build` for the frontend, then
 `pip install` for the backend) and starts the service.
 
-## 4. Optional: enable the admin log view
+## 4. Enable the admin console (`/admin`, `GET /api/admin/*`)
 
-`GET /api/admin/logs` is gated by `ADMIN_USERNAMES`, which `render.yaml`
-sets to an empty string by default (no admin routes reachable). To use it,
-set `ADMIN_USERNAMES` on the Render dashboard to your own username
-(comma-separated for more than one) and redeploy. See "Admin log access"
-in `docs/API_CONTRACT.md`.
+`ADMIN_USERNAMES` (set in step 2, dashboard-only) gates both admin routes
+— if left blank when prompted, no admin routes are reachable. To use it:
+
+1. Set `ADMIN_USERNAMES` on the Render dashboard to the exact username you
+   will register (comma-separated for more than one operator).
+2. Register that same username through the live site's normal sign-up
+   flow (`/register`) — setting the env var does not create the account.
+3. Log in as that user; the `/admin` link becomes visible, and
+   `require_admin` re-checks the username against `ADMIN_USERNAMES` on
+   every admin request server-side.
+
+**No persistent disk (see above) means the SQLite file resets on every
+redeploy/restart** — that includes this admin account. After any
+redeploy, re-register the same username before it's available again.
+
+See "Admin database access" in `docs/API_CONTRACT.md` for what the two
+routes expose.
 
 ## 5. Verify
 

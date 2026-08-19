@@ -14,7 +14,7 @@ real OpenRouter quota.
 | `test_auth.py` | register/duplicate/login/logout, the registration race condition, username charset |
 | `test_chat.py` | input validation, one AI call per question, follow-up context, list/get/delete ownership, per-user rate limit |
 | `test_ai.py` | the OpenRouter request body, the free-model fallback list, timeout/429/5xx/malformed responses, paid-model and missing-key guards |
-| `test_admin.py` | `/api/admin/logs` auth (401) / authorization (403) / response shape (200) |
+| `test_admin.py` | 관리자 표시 값, `/api/admin/logs` 전체 행, `/api/admin/database` 세 테이블, 인증(401), 인가(403), 비밀번호 해시 제외, 캐시 금지 |
 | `test_operations.py` | logs carry lifecycle events and `request_id`/`user_id`/`latency_ms` but never question/answer text, passwords, or API keys |
 | `test_config.py` | production refuses to start with the default `SECRET_KEY` (subprocess, since import-time behavior can't be tested via a normal import) |
 | `test_spa.py` | `/api/*` 404s as JSON vs. non-API paths falling back to the SPA — skips if `frontend/dist` isn't built |
@@ -60,7 +60,7 @@ file and was removed with it.
 
 ## Frontend (`npm test` / `npx vitest run` from `frontend/`)
 
-35 tests across 9 files, reviewed for the same "is this redundant or
+40 tests across 10 files, reviewed for the same "is this redundant or
 unclear" question the backend suite got — nothing removed here, each file
 covers a distinct concern with no overlap found:
 
@@ -72,6 +72,7 @@ covers a distinct concern with no overlap found:
 | `components/ConversationView.test.tsx` | AI answer content is rendered as escaped text, not HTML (XSS) |
 | `pages/AuthPages.test.tsx` | navigating away during login/register doesn't let a late success redirect the user back |
 | `pages/ChatPage.test.tsx` | the request-version/mount-guard logic in `ChatPage.tsx`: stale session-switch responses, a late POST after unmount, a submitted question surviving a mid-flight auth expiry, no duplicate GETs on state transitions |
+| `pages/AdminPage.test.tsx` | 관리자 세 테이블 표시·검색·관계 연결, 403에서 개인정보 미표시, 401에서 관리자 로그인 복귀 경로 |
 | `lib/dateTime.test.ts` | server timestamps without a timezone offset are treated as UTC, not local time |
 | `lib/errorMessages.test.ts` | the exact required Korean error strings, and that unknown codes fall back to a generic message instead of leaking the code |
 | `lib/navigationState.test.ts` | pending-question length cap, and that a `next=` redirect query can't point off-site (open-redirect guard) |

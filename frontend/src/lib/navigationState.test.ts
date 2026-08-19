@@ -24,4 +24,10 @@ describe("navigation state helpers", () => {
         // 외부 URL query는 고정 내부 채팅 경로로 대체되어야 한다.
         expect(readSafeNextPath("?next=https://example.com/steal")).toBe("/chat");
     });
+
+    // 관리자 로그인 뒤 안전한 내부 관리자 화면으로 돌아갈 수 있는지 확인한다.
+    it("allows the internal admin next path", () => {
+        // 고정된 관리자 경로만 예외 없이 허용해야 한다.
+        expect(readSafeNextPath("?next=/admin")).toBe("/admin");
+    });
 });

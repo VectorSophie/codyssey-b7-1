@@ -12,6 +12,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 // 인증 사용자용 채팅 화면 컴포넌트를 불러온다.
 import { ChatPage } from "./pages/ChatPage";
+// 관리자 전용 SQLite 데이터 화면 컴포넌트를 불러온다.
+import { AdminPage } from "./pages/AdminPage";
 
 // EVERYTHING의 전체 URL 구조를 정의한다.
 export default function App() {
@@ -40,6 +42,18 @@ export default function App() {
                         <ProtectedRoute>
                             {/* 인증이 확인된 경우에만 채팅 UI를 만든다. */}
                             <ChatPage />
+                        </ProtectedRoute>
+                    }
+                />
+                {/* 로그인 사용자의 관리자 API 권한을 다시 확인할 운영 화면이다. */}
+                <Route
+                    // 관리자 전용 내부 URL을 사용한다.
+                    path="/admin"
+                    // 먼저 로그인 상태를 확인한 뒤 관리자 화면을 렌더링한다.
+                    element={
+                        <ProtectedRoute>
+                            {/* 실제 관리자 여부는 AdminPage의 서버 API가 검증한다. */}
+                            <AdminPage />
                         </ProtectedRoute>
                     }
                 />

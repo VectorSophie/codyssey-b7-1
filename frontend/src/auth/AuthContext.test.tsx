@@ -41,6 +41,8 @@ const testUser: User = {
     email: "context-reader@example.com",
     // 화면 타입으로 변환된 계정 생성 시각이다.
     createdAt: "2026-08-08T15:00:00",
+    // 일반 인증 흐름 테스트이므로 관리자 권한은 없다.
+    isAdmin: false,
 };
 
 // 테스트가 인증 상태와 인증 동작을 화면 요소로 확인할 수 있게 만든다.

@@ -11,6 +11,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     const { authError, retryAuthentication, status } = useAuth();
     // 로그인 후 원래 위치로 돌아가기 위해 현재 경로를 읽는다.
     const location = useLocation();
+    // 관리자 화면은 로그인 뒤 관리자 화면으로, 나머지는 채팅으로 돌아가게 제한한다.
+    const nextPath = location.pathname === "/admin" ? "/admin" : "/chat";
 
     // 서버 세션 확인이 끝나기 전에는 빈 화면 대신 상태를 보여준다.
     if (status === "checking") {
@@ -48,8 +50,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         // 외부 URL을 허용하지 않는 고정 로그인 경로로 이동한다.
         return (
             <Navigate
-                // 로그인 완료 뒤 채팅으로만 돌아가도록 안전한 내부 경로를 쓴다.
-                to="/login?next=/chat"
+                // 로그인 완료 뒤 검증된 채팅 또는 관리자 경로로 돌아간다.
+                to={`/login?next=${encodeURIComponent(nextPath)}`}
                 // 뒤로가기로 보호 화면에 반복 진입하지 않게 기록을 교체한다.
                 replace
                 // 로그인 화면이 필요한 경우 참고할 이전 위치만 전달한다.

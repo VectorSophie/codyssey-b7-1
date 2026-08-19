@@ -2,6 +2,8 @@
 
 > 궁금한 건 무엇이든.
 
+**라이브 데모:** https://everything-v9k6.onrender.com
+
 EVERYTHING은 한국어 사용자가 자연어로 일반 지식 질문을 하고, 간결한
 AI 설명과 문맥을 이어받은 후속 답변을 받은 뒤, 이전 대화를 다시 볼 수
 있는 대화형 AI 백과사전입니다.
@@ -115,15 +117,19 @@ timing-safe login" 시퀀스 다이어그램을 참고하세요.
 | `app/main.py` | 애플리케이션, 예외 처리, `/health`, 채팅 request ID |
 | `app/routers/auth.py` | 회원가입, 로그인, 로그아웃, 현재 사용자 |
 | `app/routers/chat.py` | 질문, 목록, 상세 조회, 삭제 API |
-| `app/routers/admin.py` | 관리자 로그 조회 API (`ADMIN_USERNAMES` 필요) |
+| `app/routers/admin.py` | 관리자 로그·DB 전체 조회 API (`ADMIN_USERNAMES` 필요) |
 | `app/services/ai.py` | OpenRouter 무료 모델 HTTP 경계 |
 | `app/services/context.py` | 최근 대화 문맥 구성 및 크기 제한 |
-| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그, 관리자 로그 조회 |
+| `app/services/chat.py` | 검증, rate limit, AI 호출, 저장, 생명주기 로그 |
+| `app/services/admin.py` | 관리자용 결합 로그·전체 테이블 스냅샷 조회 |
 | `app/services/users.py` | `users` 테이블에 직접 접근하는 유일한 모듈 |
 | `app/models/` | 사용자, 대화 세션, 메시지 모델 |
 | `app/templates/`, `app/static/` | 서버 렌더링 UI와 브라우저 동작 |
 | `tests/` | 외부 네트워크 없는 자동 검증 |
-| `scripts/` | 평가자용 DB 검사 도구 |
+| `scripts/` | 평가자용 DB 검사 SQL |
+
+파일마다 역할과 핵심 개념(비동기, 의존성 주입 등)까지 한 번에 찾고 싶으면
+`docs/FILE_MAP.md`를 참고하세요.
 
 검색·grounding은 향후 별도 retrieval service로 추가할 수 있지만 MVP에는
 포함하지 않습니다.
@@ -264,7 +270,8 @@ uvicorn app.main:app --reload
 | `GET` | `/api/chats` | 예 | 내 대화 목록 |
 | `GET` | `/api/chats/{session_id}` | 예 | 내 대화와 메시지 조회 |
 | `DELETE` | `/api/chats/{session_id}` | 예 | 내 대화 삭제 |
-| `GET` | `/api/admin/logs` | 예 (admin) | 최근 메시지 로그 (`scripts/check_logs.sql`과 동일 데이터) |
+| `GET` | `/api/admin/logs` | 예 (admin) | 사용자·대화방 정보가 연결된 전체 메시지 로그 |
+| `GET` | `/api/admin/database` | 예 (admin) | `users`, `chat_sessions`, `messages` 전체 행 (`password_hash` 제외) |
 | `GET` | `/health` | 아니요 | AI를 호출하지 않는 상태 확인 |
 
 ### 인증 예시
@@ -283,7 +290,8 @@ Content-Type: application/json
     "id": 1,
     "username": "alice",
     "email": "alice@example.com",
-    "created_at": "2026-08-08T09:00:00Z"
+    "created_at": "2026-08-08T09:00:00Z",
+    "is_admin": false
   }
 }
 ```
@@ -362,7 +370,7 @@ pytest -q
 - DB 저장 실패와 내부 예외 비노출
 - 필수 로그 이벤트와 비밀정보 필터
 - `/health` 공개 접근과 AI 호출 0회
-- 관리자 로그 라우트 인증/인가
+- 관리자 전체 DB·로그 라우트 인증/인가와 비밀번호 해시 제외
 - 사용자당 rate limit
 - 테스트 전체의 외부 네트워크 차단
 
@@ -377,13 +385,18 @@ pytest -q tests/test_ai.py tests/test_operations.py
 
 ## 데이터베이스 검사
 
-최근 50개 메시지와 request ID, 상태, AI 지연시간을 확인합니다.
+전체 메시지와 사용자·대화방 관계, request ID, 상태, AI 지연시간을 확인합니다.
 
 ```bash
 sqlite3 -header -column app.db < scripts/check_logs.sql
 ```
 
 검사 쿼리는 `password_hash`를 선택하지 않습니다.
+
+`ADMIN_USERNAMES`에 등록된 계정은 로그인 후 `/admin`에서 같은 SQLite
+데이터를 검색하고 표별로 확인할 수 있습니다. 관리자 API 응답은 브라우저에
+개인정보가 남지 않도록 캐시를 금지합니다. `is_admin`은 메뉴를 보여주기 위한
+응답 값일 뿐이며, 실제 데이터 접근 권한은 매 요청마다 서버가 다시 검사합니다.
 
 ## 로깅과 관측성
 
@@ -403,6 +416,8 @@ db_save_success 또는 db_save_failed
 `INTERNAL_ERROR`를 반환합니다.
 
 ## 배포
+
+**라이브 배포:** https://everything-v9k6.onrender.com ([상태 확인](https://everything-v9k6.onrender.com/health))
 
 이 MVP는 한 개의 FastAPI 인스턴스와 영구 SQLite 파일을 전제로 합니다.
 운영 환경에서는 TLS reverse proxy 뒤에서 다음처럼 실행할 수 있습니다.
