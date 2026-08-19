@@ -378,8 +378,18 @@ export function ChatPage() {
             setIsConversationLoading(false);
             // 현재 서버 대화 번호를 비운다.
             setActiveSessionId(null);
-            // 이전 질문과 답변을 읽기 영역에서 지운다.
-            setMessages([]);
+            // StrictMode가 Effect를 다시 실행해도 이미 전송한 로그인 전 질문은 지우지 않는다.
+            if (
+                // 자동 POST가 실제로 시작돼 같은 질문의 임시 화면이 만들어졌는지 확인한다.
+                !chatSubmitLockRef.current
+                // 로그인 전 전달 질문이 없는 일반 새 질문 화면인지 확인한다.
+                || initialPendingQuestionRef.current.length === 0
+                // 저장 대화에서 새 URL로 이동한 경우에는 이전 메시지를 정상적으로 지운다.
+                || activeSessionId !== null
+            ) {
+                // 자동 전송 중인 최초 질문이 아닌 경우에만 이전 대화 내용을 지운다.
+                setMessages([]);
+            }
             // 새 질문 상태에서는 대화 조회 오류를 지운다.
             setConversationError("");
             // 새 질문 상태에서는 이전 답변 도착 발표를 지운다.

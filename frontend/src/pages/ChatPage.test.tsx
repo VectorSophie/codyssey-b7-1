@@ -1,5 +1,7 @@
 // 채팅 화면을 사용자 동작처럼 검사할 React Testing Library 기능을 불러온다.
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+// 실제 앱과 같은 Effect 이중 검증 환경을 만들 StrictMode를 불러온다.
+import { StrictMode } from "react";
 // 실제 URL 전환을 메모리 안에서 재현할 React Router 기능을 불러온다.
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 // 테스트 전 mock 정리와 결과 검증에 사용할 Vitest 기능을 불러온다.
@@ -20,7 +22,7 @@ import {
 // 로그인 이동 state의 질문을 화면에서 안전하게 확인할 함수를 불러온다.
 import { readPendingQuestion } from "../lib/navigationState";
 // 테스트 대화와 메시지에 실제 화면 타입을 적용한다.
-import type { ChatMessage, ChatSession, User } from "../types";
+import type { ChatMessage, ChatSendResult, ChatSession, User } from "../types";
 
 // 인증 mock 함수가 렌더마다 바뀌어 effect를 다시 실행하지 않게 고정한다.
 const authMocks = vi.hoisted(() => ({
@@ -103,9 +105,12 @@ function LocationProbe() {
 function renderChat(
     // 문자열 URL 또는 질문 이동 state가 포함된 채팅 주소를 받는다.
     initialEntry: string | { pathname: string; state: { pendingQuestion: string } } = "/chat",
+    // 실제 앱의 개발 환경 Effect 이중 실행이 필요한 테스트인지 받는다.
+    useStrictMode: boolean = false,
 ): void {
-    // 원하는 첫 URL로 메모리 Router를 시작한다.
-    render(
+    // 실제 앱 경로를 재현하는 Router 화면을 한 번 만든다.
+    const routerContent = (
+        // 실제 앱처럼 Router 안에서 채팅 화면을 렌더링한다.
         <MemoryRouter initialEntries={[initialEntry]} useTransitions={false}>
             {/* 현재 URL을 모든 경로에서 계속 확인한다. */}
             <LocationProbe />
@@ -118,8 +123,11 @@ function renderChat(
                 {/* 인증 만료가 안전한 로그인 경로로 이동했는지 확인할 화면이다. */}
                 <Route path="/login" element={<main>로그인 도착</main>} />
             </Routes>
-        </MemoryRouter>,
+        </MemoryRouter>
     );
+
+    // 버그 재현 테스트만 main.tsx와 같은 StrictMode로 렌더링한다.
+    render(useStrictMode ? <StrictMode>{routerContent}</StrictMode> : routerContent);
 }
 
 // 테스트에 사용할 저장 대화 요약을 만든다.
@@ -197,22 +205,15 @@ describe("ChatPage", () => {
 
     // 로그인 전에 작성한 질문이 채팅 진입 직후 별도 클릭 없이 전송되는지 확인한다.
     it("automatically sends the pending question once after login", async () => {
-        // 자동 전송 요청에 서버가 새 대화 번호와 답변을 반환하게 한다.
-        vi.mocked(sendChatMessage).mockResolvedValueOnce({
-            // 서버가 자동 질문으로 만든 새 대화 번호다.
-            sessionId: 42,
-            // 화면에 표시할 AI 답변 객체다.
-            message: {
-                // 테스트 답변의 고유 번호다.
-                id: 422,
-                // AI가 작성한 메시지임을 표시한다.
-                role: "assistant",
-                // 자동 전송 성공을 확인할 답변 내용이다.
-                content: "자동 전송 답변",
-                // 화면이 날짜를 표시할 때 사용할 생성 시각이다.
-                createdAt: "2026-08-19T10:00:00Z",
-            },
+        // AI 답변이 끝나기 전 화면을 검사하도록 Promise 완료 함수를 보관한다.
+        let resolvePendingRequest!: (result: ChatSendResult) => void;
+        // 테스트가 직접 완료할 때까지 기다리는 채팅 API Promise를 만든다.
+        const pendingRequest = new Promise<ChatSendResult>((resolve) => {
+            // 아래 검증이 끝난 뒤 호출할 완료 함수를 저장한다.
+            resolvePendingRequest = resolve;
         });
+        // 자동 전송 요청이 즉시 끝나지 않고 테스트의 완료 신호를 기다리게 한다.
+        vi.mocked(sendChatMessage).mockReturnValueOnce(pendingRequest);
 
         // 로그인 성공 이동처럼 질문을 URL이 아닌 Router state에 담아 채팅을 연다.
         renderChat({
@@ -220,17 +221,45 @@ describe("ChatPage", () => {
             pathname: "/chat",
             // 로그인 전에 작성한 질문을 이동 state로 전달한다.
             state: { pendingQuestion: "로그인 전에 작성한 질문" },
-        });
+        }, true);
 
         // 사용자가 보내기 버튼을 누르지 않아도 채팅 API가 호출될 때까지 기다린다.
         await waitFor(() => {
             // 새 대화이므로 session id 없이 최초 질문을 정확히 전송해야 한다.
             expect(sendChatMessage).toHaveBeenCalledWith(null, "로그인 전에 작성한 질문");
         });
+        // AI 답변을 기다리는 동안 사용자가 보낸 질문이 먼저 보여야 한다.
+        expect(screen.getByRole("heading", { name: "로그인 전에 작성한 질문" })).toBeInTheDocument();
+        // AI 답변을 기다리는 동안 현재 생성 중임을 알리는 상태 문구가 보여야 한다.
+        expect(screen.getByText("지식을 찾는 중…")).toBeInTheDocument();
         // React StrictMode와 Router state 제거가 같은 질문을 중복 전송하지 않아야 한다.
         expect(sendChatMessage).toHaveBeenCalledTimes(1);
         // 사용이 끝난 질문은 브라우저 이동 state에 남지 않아야 한다.
         expect(screen.getByTestId("pending-question")).toHaveTextContent("");
+
+        // 중간 화면 검사가 끝난 뒤 서버가 새 대화와 답변을 반환하게 한다.
+        await act(async () => {
+            // 자동 질문으로 만든 새 대화 번호와 AI 답변으로 Promise를 완료한다.
+            resolvePendingRequest({
+                // 서버가 자동 질문으로 만든 새 대화 번호다.
+                sessionId: 42,
+                // 화면에 표시할 AI 답변 객체다.
+                message: {
+                    // 테스트 답변의 고유 번호다.
+                    id: 422,
+                    // AI가 작성한 메시지임을 표시한다.
+                    role: "assistant",
+                    // 자동 전송 성공을 확인할 답변 내용이다.
+                    content: "자동 전송 답변",
+                    // 화면이 날짜를 표시할 때 사용할 생성 시각이다.
+                    createdAt: "2026-08-19T10:00:00Z",
+                },
+            });
+            // Promise 완료 뒤 React 상태 변경이 반영될 때까지 기다린다.
+            await pendingRequest;
+        });
+        // 최종 AI 답변도 같은 대화 화면에 표시돼야 한다.
+        expect(await screen.findByText("자동 전송 답변")).toBeInTheDocument();
     });
 
     // 첫 질문 성공 결과가 새 URL 전환 뒤에도 같은 화면에 남는지 확인한다.
