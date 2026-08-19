@@ -69,6 +69,8 @@ vi.mock("../auth/AuthContext", () => ({
             email: "chat-reader@example.com",
             // 테스트 계정 생성 시각이다.
             createdAt: "2026-08-08T16:00:00Z",
+            // 일반 채팅 화면 테스트이므로 관리자 권한은 없다.
+            isAdmin: false,
         } satisfies User,
         // 이 테스트에서 직접 쓰지 않는 로그인 함수다.
         signIn: vi.fn(),

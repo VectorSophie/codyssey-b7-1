@@ -16,6 +16,23 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 _DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-safety")
 
 
+# 사용자 ORM 객체를 관리자 여부가 포함된 공개 응답으로 바꾼다.
+def _to_user_out(user: User) -> UserOut:
+    # ADMIN_USERNAMES 원문 목록은 숨기고 현재 사용자 판정 결과만 제공한다.
+    return UserOut(
+        # 공개 가능한 사용자 DB 기본키다.
+        id=user.id,
+        # 로그인과 화면 표시에 사용하는 이름이다.
+        username=user.username,
+        # 사용자가 등록한 이메일이다.
+        email=user.email,
+        # 계정이 만들어진 시각이다.
+        created_at=user.created_at,
+        # 실제 보안 검사는 require_admin이 다시 수행하며 이 값은 UI 표시용이다.
+        is_admin=user.username in settings.admin_usernames,
+    )
+
+
 def _set_session_cookie(response: Response, user_id: int) -> None:
     response.set_cookie(
         key=settings.session_cookie_name,
@@ -41,7 +58,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
     user = create_user(db, payload.username, payload.email, hash_password(payload.password))
 
     _set_session_cookie(response, user.id)
-    return AuthResponse(user=UserOut.model_validate(user))
+    return AuthResponse(user=_to_user_out(user))
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -56,7 +73,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         raise AppError("INVALID_CREDENTIALS", "invalid username or password", status_code=401)
 
     _set_session_cookie(response, user.id)
-    return AuthResponse(user=UserOut.model_validate(user))
+    return AuthResponse(user=_to_user_out(user))
 
 
 @router.post("/logout")
@@ -67,4 +84,4 @@ def logout(response: Response):
 
 @router.get("/me", response_model=AuthResponse)
 def me(user: User = Depends(require_auth)):
-    return AuthResponse(user=UserOut.model_validate(user))
+    return AuthResponse(user=_to_user_out(user))

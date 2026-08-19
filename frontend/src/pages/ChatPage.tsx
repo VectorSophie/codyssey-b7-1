@@ -992,6 +992,10 @@ export function ChatPage() {
 
                 {/* 새 질문과 계정 동작을 한 줄에 배치한다. */}
                 <nav className="chat-actions" aria-label="채팅 메뉴">
+                    {/* 서버가 관리자라고 판정한 사용자에게만 운영 화면 링크를 표시한다. */}
+                    {user?.isAdmin ? (
+                        <Link className="text-button" to="/admin">관리자</Link>
+                    ) : null}
                     {/* AI 요청 없이 빈 새 대화 상태를 만드는 버튼이다. */}
                     <button
                         // form과 무관한 일반 버튼이다.

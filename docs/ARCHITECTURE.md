@@ -384,12 +384,13 @@ and every DB access lives in the service layer. `app/routers/auth.py` had
 the same problem (`db.query(User)...` directly in `register`/`login`) --
 fixed the same way, into the new `app/services/users.py`.
 
-**Where's the admin-facing log view?** `GET /api/admin/logs`
-(`app/routers/admin.py`), gated by `require_admin`
-(`app/dependencies.py`) checking `ADMIN_USERNAMES`. Returns the same rows
-as `scripts/check_logs.sql` over HTTP instead of requiring direct SQLite
-file access. See "Admin log access" in `docs/API_CONTRACT.md` for why this
-is a config allowlist and not an `is_admin` database column.
+**Where's the admin-facing database view?** The `/admin` React page reads
+`GET /api/admin/database` (`app/routers/admin.py`), gated by `require_admin`
+(`app/dependencies.py`) checking `ADMIN_USERNAMES`. It returns all rows from
+the three application tables with their key relationships, but excludes the
+authentication secret `users.password_hash`. `GET /api/admin/logs` remains
+available for a message-centered joined view. See "Admin database access" in
+`docs/API_CONTRACT.md` for the authorization and cache rules.
 
 ## Documentation-to-PR traceability
 

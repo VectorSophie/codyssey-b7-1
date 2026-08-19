@@ -53,6 +53,8 @@ const authenticatedUser: User = {
     email: "auth-reader@example.com",
     // 서버가 반환한 계정 생성 시각이다.
     createdAt: "2026-08-08T17:00:00Z",
+    // 일반 인증 화면 테스트이므로 관리자 권한은 없다.
+    isAdmin: false,
 };
 
 // 현재 내부 경로를 테스트 화면에서 확인하는 작은 컴포넌트다.

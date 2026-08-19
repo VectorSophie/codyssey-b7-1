@@ -264,7 +264,8 @@ uvicorn app.main:app --reload
 | `GET` | `/api/chats` | 예 | 내 대화 목록 |
 | `GET` | `/api/chats/{session_id}` | 예 | 내 대화와 메시지 조회 |
 | `DELETE` | `/api/chats/{session_id}` | 예 | 내 대화 삭제 |
-| `GET` | `/api/admin/logs` | 예 (admin) | 최근 메시지 로그 (`scripts/check_logs.sql`과 동일 데이터) |
+| `GET` | `/api/admin/logs` | 예 (admin) | 사용자·대화방 정보가 연결된 전체 메시지 로그 |
+| `GET` | `/api/admin/database` | 예 (admin) | `users`, `chat_sessions`, `messages` 전체 행 (`password_hash` 제외) |
 | `GET` | `/health` | 아니요 | AI를 호출하지 않는 상태 확인 |
 
 ### 인증 예시
@@ -283,7 +284,8 @@ Content-Type: application/json
     "id": 1,
     "username": "alice",
     "email": "alice@example.com",
-    "created_at": "2026-08-08T09:00:00Z"
+    "created_at": "2026-08-08T09:00:00Z",
+    "is_admin": false
   }
 }
 ```
@@ -362,7 +364,7 @@ pytest -q
 - DB 저장 실패와 내부 예외 비노출
 - 필수 로그 이벤트와 비밀정보 필터
 - `/health` 공개 접근과 AI 호출 0회
-- 관리자 로그 라우트 인증/인가
+- 관리자 전체 DB·로그 라우트 인증/인가와 비밀번호 해시 제외
 - 사용자당 rate limit
 - 테스트 전체의 외부 네트워크 차단
 
@@ -377,13 +379,18 @@ pytest -q tests/test_ai.py tests/test_operations.py
 
 ## 데이터베이스 검사
 
-최근 50개 메시지와 request ID, 상태, AI 지연시간을 확인합니다.
+전체 메시지와 사용자·대화방 관계, request ID, 상태, AI 지연시간을 확인합니다.
 
 ```bash
 sqlite3 -header -column app.db < scripts/check_logs.sql
 ```
 
 검사 쿼리는 `password_hash`를 선택하지 않습니다.
+
+`ADMIN_USERNAMES`에 등록된 계정은 로그인 후 `/admin`에서 같은 SQLite
+데이터를 검색하고 표별로 확인할 수 있습니다. 관리자 API 응답은 브라우저에
+개인정보가 남지 않도록 캐시를 금지합니다. `is_admin`은 메뉴를 보여주기 위한
+응답 값일 뿐이며, 실제 데이터 접근 권한은 매 요청마다 서버가 다시 검사합니다.
 
 ## 로깅과 관측성
 

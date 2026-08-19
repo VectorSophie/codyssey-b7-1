@@ -1,5 +1,9 @@
 // 화면과 API 사이에서 사용할 데이터 타입을 불러온다.
 import type {
+    AdminDatabase,
+    AdminMessage,
+    AdminSession,
+    AdminUser,
     ChatDetail,
     ChatMessage,
     ChatSendResult,
@@ -62,6 +66,30 @@ function requireNumber(value: unknown): number {
 
     // 잘못된 API 응답을 내부 오류로 통일한다.
     throw new ApiRequestError("INTERNAL_ERROR");
+}
+
+// 필요한 값이 불리언인지 확인하고 아니면 안전하게 실패시킨다.
+function requireBoolean(value: unknown): boolean {
+    // 실제 true 또는 false만 허용한다.
+    if (typeof value === "boolean") {
+        // 검증된 불리언을 반환한다.
+        return value;
+    }
+
+    // 잘못된 API 응답을 내부 오류로 통일한다.
+    throw new ApiRequestError("INTERNAL_ERROR");
+}
+
+// 지연 시간처럼 숫자 또는 null인 값을 안전하게 확인한다.
+function requireNullableNumber(value: unknown): number | null {
+    // null은 값이 저장되지 않았다는 정상 상태로 허용한다.
+    if (value === null) {
+        // 화면이 빈 지연 시간으로 표시할 null을 반환한다.
+        return null;
+    }
+
+    // null이 아니면 일반 숫자 검사 함수를 재사용한다.
+    return requireNumber(value);
 }
 
 // 필요한 값이 JSON 객체인지 확인하고 아니면 안전하게 실패시킨다.
@@ -179,6 +207,78 @@ function normalizeUser(value: unknown): User {
         email: requireString(user.email),
         // 서버 생성 시각을 문자열로 검증한다.
         createdAt: requireString(user.created_at),
+        // 서버가 판정한 관리자 메뉴 표시값을 검증한다.
+        isAdmin: requireBoolean(user.is_admin),
+    };
+}
+
+// 관리자 users 응답 한 행을 화면 타입으로 바꾼다.
+function normalizeAdminUser(value: unknown): AdminUser {
+    // 사용자 행의 필드를 읽을 수 있도록 객체인지 확인한다.
+    const user = requireRecord(value);
+    // snake_case 서버 필드를 화면의 camelCase 타입으로 변환한다.
+    return {
+        // 사용자 기본키를 숫자로 검증한다.
+        id: requireNumber(user.id),
+        // 사용자 이름을 문자열로 검증한다.
+        username: requireString(user.username),
+        // 이메일을 문자열로 검증한다.
+        email: requireString(user.email),
+        // 계정 생성 시각을 문자열로 검증한다.
+        createdAt: requireString(user.created_at),
+    };
+}
+
+// 관리자 chat_sessions 응답 한 행을 화면 타입으로 바꾼다.
+function normalizeAdminSession(value: unknown): AdminSession {
+    // 대화방 행의 필드를 읽을 수 있도록 객체인지 확인한다.
+    const session = requireRecord(value);
+    // 서버 필드를 화면의 camelCase 타입으로 변환한다.
+    return {
+        // 대화방 기본키를 숫자로 검증한다.
+        id: requireNumber(session.id),
+        // 소유 사용자 기본키를 숫자로 검증한다.
+        userId: requireNumber(session.user_id),
+        // 대화 제목을 문자열로 검증한다.
+        title: requireString(session.title),
+        // 대화 생성 시각을 문자열로 검증한다.
+        createdAt: requireString(session.created_at),
+        // 대화 갱신 시각을 문자열로 검증한다.
+        updatedAt: requireString(session.updated_at),
+    };
+}
+
+// 관리자 messages 응답 한 행을 화면 타입으로 바꾼다.
+function normalizeAdminMessage(value: unknown): AdminMessage {
+    // 메시지 행의 필드를 읽을 수 있도록 객체인지 확인한다.
+    const message = requireRecord(value);
+    // role 원문을 문자열로 확인한다.
+    const role = requireString(message.role);
+
+    // 현재 DB 계약의 사용자와 AI 역할만 화면에 허용한다.
+    if (role !== "user" && role !== "assistant") {
+        // 알 수 없는 역할은 내부 응답 오류로 막는다.
+        throw new ApiRequestError("INTERNAL_ERROR");
+    }
+
+    // 검증된 필드를 관리자 메시지 타입으로 변환한다.
+    return {
+        // 메시지 기본키를 숫자로 검증한다.
+        id: requireNumber(message.id),
+        // 소속 대화방 기본키를 숫자로 검증한다.
+        sessionId: requireNumber(message.session_id),
+        // 허용된 역할만 저장한다.
+        role,
+        // 질문 또는 답변 원문을 문자열로 검증한다.
+        content: requireString(message.content),
+        // 요청 추적 번호를 문자열로 검증한다.
+        requestId: requireString(message.request_id),
+        // 저장 상태를 문자열로 검증한다.
+        status: requireString(message.status),
+        // 지연 시간을 숫자 또는 null로 검증한다.
+        latencyMs: requireNullableNumber(message.latency_ms),
+        // 메시지 생성 시각을 문자열로 검증한다.
+        createdAt: requireString(message.created_at),
     };
 }
 
@@ -345,4 +445,35 @@ export async function deleteChatSession(sessionId: number): Promise<void> {
         // 서버 기록을 지우는 DELETE 요청을 사용한다.
         method: "DELETE",
     });
+}
+
+// 관리자가 SQLite의 안전한 전체 업무 데이터를 조회한다.
+export async function getAdminDatabase(): Promise<AdminDatabase> {
+    // AI 호출이나 데이터 변경이 없는 관리자 GET 요청을 보낸다.
+    const body = await requestJson("/api/admin/database");
+    // 응답 최상위 값이 객체인지 확인한다.
+    const response = requireRecord(body);
+
+    // 세 테이블이 모두 배열로 제공됐는지 확인한다.
+    if (
+        // users가 배열이 아니면 잘못된 응답이다.
+        !Array.isArray(response.users)
+        // chat_sessions가 배열이 아니면 잘못된 응답이다.
+        || !Array.isArray(response.sessions)
+        // messages가 배열이 아니면 잘못된 응답이다.
+        || !Array.isArray(response.messages)
+    ) {
+        // 일부 테이블이 누락된 응답을 화면에 표시하지 않는다.
+        throw new ApiRequestError("INTERNAL_ERROR");
+    }
+
+    // 각 테이블 행을 검증된 화면 타입으로 변환한다.
+    return {
+        // users 전체 행을 안전한 사용자 타입으로 변환한다.
+        users: response.users.map(normalizeAdminUser),
+        // chat_sessions 전체 행을 안전한 대화방 타입으로 변환한다.
+        sessions: response.sessions.map(normalizeAdminSession),
+        // messages 전체 행을 안전한 메시지 타입으로 변환한다.
+        messages: response.messages.map(normalizeAdminMessage),
+    };
 }

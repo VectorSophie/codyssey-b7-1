@@ -32,9 +32,9 @@ export function readSafeNextPath(search: string): string {
     // 사용자가 요청한 다음 경로를 읽는다.
     const nextPath = searchParams.get("next");
 
-    // 현재 서비스에서 인증 후 허용할 경로는 채팅 하나뿐이다.
-    if (nextPath === "/chat") {
-        // 검증된 내부 채팅 경로만 반환한다.
+    // 현재 서비스에서 인증 후 허용할 경로는 채팅과 관리자 화면뿐이다.
+    if (nextPath === "/chat" || nextPath === "/admin") {
+        // 검증된 내부 경로만 반환한다.
         return nextPath;
     }
 
