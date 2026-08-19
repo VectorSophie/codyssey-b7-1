@@ -1,5 +1,9 @@
 # Architecture — EVERYTHING
 
+> Looking for which file does what, or where a specific concept (async,
+> dependency injection, rate limiting, ...) lives in code? See
+> `docs/FILE_MAP.md`.
+
 ## Flow
 
 ```mermaid
