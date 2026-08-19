@@ -2,6 +2,8 @@
 
 > 궁금한 건 무엇이든.
 
+**라이브 데모:** https://everything-v9k6.onrender.com
+
 EVERYTHING은 한국어 사용자가 자연어로 일반 지식 질문을 하고, 간결한
 AI 설명과 문맥을 이어받은 후속 답변을 받은 뒤, 이전 대화를 다시 볼 수
 있는 대화형 AI 백과사전입니다.
@@ -115,15 +117,19 @@ timing-safe login" 시퀀스 다이어그램을 참고하세요.
 | `app/main.py` | 애플리케이션, 예외 처리, `/health`, 채팅 request ID |
 | `app/routers/auth.py` | 회원가입, 로그인, 로그아웃, 현재 사용자 |
 | `app/routers/chat.py` | 질문, 목록, 상세 조회, 삭제 API |
-| `app/routers/admin.py` | 관리자 로그 조회 API (`ADMIN_USERNAMES` 필요) |
+| `app/routers/admin.py` | 관리자 로그·DB 전체 조회 API (`ADMIN_USERNAMES` 필요) |
 | `app/services/ai.py` | OpenRouter 무료 모델 HTTP 경계 |
 | `app/services/context.py` | 최근 대화 문맥 구성 및 크기 제한 |
-| `app/services/chat.py` | 검증, AI 호출, 저장, 생명주기 로그, 관리자 로그 조회 |
+| `app/services/chat.py` | 검증, rate limit, AI 호출, 저장, 생명주기 로그 |
+| `app/services/admin.py` | 관리자용 결합 로그·전체 테이블 스냅샷 조회 |
 | `app/services/users.py` | `users` 테이블에 직접 접근하는 유일한 모듈 |
 | `app/models/` | 사용자, 대화 세션, 메시지 모델 |
 | `app/templates/`, `app/static/` | 서버 렌더링 UI와 브라우저 동작 |
 | `tests/` | 외부 네트워크 없는 자동 검증 |
-| `scripts/` | 평가자용 DB 검사 도구 |
+| `scripts/` | 평가자용 DB 검사 SQL |
+
+파일마다 역할과 핵심 개념(비동기, 의존성 주입 등)까지 한 번에 찾고 싶으면
+`docs/FILE_MAP.md`를 참고하세요.
 
 검색·grounding은 향후 별도 retrieval service로 추가할 수 있지만 MVP에는
 포함하지 않습니다.
@@ -410,6 +416,8 @@ db_save_success 또는 db_save_failed
 `INTERNAL_ERROR`를 반환합니다.
 
 ## 배포
+
+**라이브 배포:** https://everything-v9k6.onrender.com ([상태 확인](https://everything-v9k6.onrender.com/health))
 
 이 MVP는 한 개의 FastAPI 인스턴스와 영구 SQLite 파일을 전제로 합니다.
 운영 환경에서는 TLS reverse proxy 뒤에서 다음처럼 실행할 수 있습니다.
